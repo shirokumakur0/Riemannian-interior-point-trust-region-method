@@ -2,18 +2,13 @@
 
 Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior point trust region method for inequality-constrained optimization problems on Riemannian manifolds, arXiv, 2024".
 
-Our implementation includes
-- Riemannian interior point trust region method (RIPTRM)
-- Riemannian interior point method (RIPM) in "Z. Lai and A. Yoshise. Riemannian interior point methods for constrained optimization on manifolds, Journal of Optimization Theory and Applications, 201 (2024), pp.433–469." [link](https://link.springer.com/article/10.1007/s10957-024-02403-8)
-- Riemannian sequential quadratic optimization (RSQO) in "M. Obara, T. Okuno, and A. Takeda. Sequential quadratic optimization for nonlinear optimization problems on Riemannian manifolds, SIAM Journal on Optimization, 32 (2022), pp.822–853." [link](https://epubs.siam.org/doi/abs/10.1137/20M1370173?download=true&journalCode=sjope8)
-- Riemannian augmented Lagrangian method (RALM) in "C. Liu and N. Boumal. Simple algorithms for optimization on Riemannian manifolds with constraints, Applied Mathematics and Optimization, 82 (2020), pp.949–981." [link](https://link.springer.com/article/10.1007/s00245-019-09564-3)
+Our implementation includes Riemannian interior point trust region method (RIPTRM) and
+- Riemannian interior point method (RIPM) <!-- in "Z. Lai and A. Yoshise. Riemannian interior point methods for constrained optimization on manifolds, Journal of Optimization Theory and Applications, 201 (2024), pp.433–469."--> [[link]](https://link.springer.com/article/10.1007/s10957-024-02403-8)
+- Riemannian sequential quadratic optimization (RSQO) <!--> in "M. Obara, T. Okuno, and A. Takeda. Sequential quadratic optimization for nonlinear optimization problems on Riemannian manifolds, SIAM Journal on Optimization, 32 (2022), pp.822–853."--> [[link]](https://epubs.siam.org/doi/abs/10.1137/20M1370173?download=true&journalCode=sjope8)
+- Riemannian augmented Lagrangian method (RALM) <!-- in "C. Liu and N. Boumal. Simple algorithms for optimization on Riemannian manifolds with constraints, Applied Mathematics and Optimization, 82 (2020), pp.949–981."--> [[link]](https://link.springer.com/article/10.1007/s00245-019-09564-3)
 
 ## Requirements
-This template requires the following libraries:
-
-- [Hydra](https://hydra.cc/)
-- [Wandb](https://wandb.ai/site) (registration required)
-- [Pymanopt](https://pymanopt.org/docs/stable/index.html) (for demonstration)
+This template requires [Pymanopt](https://pymanopt.org/docs/stable/index.html), [Hydra](https://hydra.cc/), [Wandb](https://wandb.ai/site) (registration required).
 
 Make sure to install these libraries before running the experiments.
 
@@ -58,7 +53,7 @@ For a visual representation of the relationships and workflow among the modules,
 ![simulation_overview](https://github.com/Mathematical-Informatics-5th-Lab/Simulator-Template/assets/38340809/998edf62-0c45-4446-92cf-ac71af04ff4c)
 
 ## Note
-**wandb visualization**
+**1. wandb visualization**
 
 In the 'config_simulation.yaml' file, there is a setting for wandb visualization as shown below:
 ```
@@ -74,7 +69,7 @@ This enables us to visualize graphs and charts of the optimization processes, fa
 Turn off wandb_logging if not necessary.
 
 
-**hybra multi-run**
+**2. hybra multi-run**
 
 Hydra supports [multi-run](https://hydra.cc/docs/tutorials/basic/running_your_app/multi-run/) functionality, allowing us to efficiently handle multiple problem instances and conduct simulations in parallel.
 To create problem instances at once, follow the sweeper setting in 'config_dataset.yaml':
