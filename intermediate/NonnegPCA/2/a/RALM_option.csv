@@ -1,0 +1,2 @@
+maxtime,maxiter,tolresid,rho,bound,tau,thetarho,numOuterItertgn,innersubsolver,maxInnerIter,startingtolgradnorm,endingtolgradnorm,innerminstepsize,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
+3600,25,1e-10,0.1,20,0.8,0.3,30,SteepestDescent,200,0.001,1e-06,1e-10,2,<function manviofun at 0x104cd4680>,<function RALM.__init__.<locals>.<lambda> at 0x157064400>,True,NonnegPCA-2-a,Max iteration count reached; maxiter=25 after 2.95 seconds

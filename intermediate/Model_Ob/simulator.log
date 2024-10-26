@@ -1,0 +1,231 @@
+[2023-12-31 19:37:39,737][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:37:40,096][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:37:40,100][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:37:42,382][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:38:08,882][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:38:09,257][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:38:09,262][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:38:11,063][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:39:52,017][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:39:52,368][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:39:52,372][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:39:54,122][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:40:35,756][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:40:36,147][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:40:36,150][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:40:37,902][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:41:03,526][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:41:03,940][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:41:03,943][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:41:05,675][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:42:04,604][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:42:04,972][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:42:04,976][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:42:06,782][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:50:34,634][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:50:35,014][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:50:35,018][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:50:36,903][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:51:16,950][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:51:17,371][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:51:17,376][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:51:19,334][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:52:34,272][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:52:34,660][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:52:34,665][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:52:36,477][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:53:10,790][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:53:11,159][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:53:11,162][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:53:12,997][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 19:56:11,678][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 19:56:12,078][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:56:12,082][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 19:56:14,441][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:14:24,887][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:14:25,744][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:14:25,751][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:14:27,939][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:16:18,084][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:16:18,715][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:16:18,720][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:16:22,516][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:16:22,914][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:16:22,918][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:16:24,707][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:17:47,311][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:17:47,725][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:17:47,729][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:17:49,710][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:18:20,414][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:18:20,801][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:18:20,805][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:18:22,845][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:19:25,541][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:19:25,953][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:19:25,956][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:19:27,758][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:20:42,343][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:20:42,746][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:20:42,749][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:20:44,541][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:21:47,357][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:21:47,703][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:21:47,707][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:21:49,541][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:22:57,208][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:22:57,583][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:22:57,587][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:22:59,329][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:24:07,833][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:24:08,199][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:24:08,203][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:24:09,961][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:25:50,139][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:25:50,558][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:25:50,563][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:25:52,390][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:26:45,769][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:26:46,106][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:26:46,110][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:26:47,960][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:27:59,374][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:27:59,785][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:27:59,786][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:28:01,817][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:28:01,951][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:28:01,951][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:28:52,344][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:28:52,724][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:28:52,725][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:28:54,531][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:28:54,682][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:28:54,682][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:29:15,484][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:29:15,877][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:29:15,879][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:29:17,692][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:29:20,960][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:29:20,960][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:31:18,852][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:31:19,265][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:31:19,267][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:31:21,020][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:31:24,102][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:31:24,110][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:32:32,487][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:32:32,841][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:32:32,844][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:32:34,698][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:33:03,110][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:33:03,493][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:33:03,495][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:33:05,205][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:33:08,258][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:33:08,263][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:35:56,640][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:35:57,324][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:35:57,327][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:35:59,220][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:36:16,542][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:36:16,900][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:36:16,902][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:36:18,635][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:36:32,213][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:36:32,589][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:36:32,590][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:36:34,304][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:36:37,345][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:36:37,350][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:37:56,123][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:37:56,697][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:37:56,700][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:37:58,516][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:38:05,893][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:38:06,276][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:38:06,277][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:38:07,985][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:38:11,199][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:38:11,205][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:41:58,202][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:41:58,861][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:41:58,864][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:42:00,831][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:42:43,277][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:42:43,863][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:42:43,866][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:42:45,690][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:43:56,410][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:43:56,792][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:44:56,289][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:44:56,911][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:45:46,961][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:45:47,576][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:45:47,579][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:45:49,647][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:45:57,692][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:45:57,692][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:46:12,181][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:46:12,588][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:46:12,591][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:46:14,730][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:46:22,740][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:46:22,740][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:46:45,417][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:46:45,822][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:46:45,823][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:46:47,680][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:46:55,698][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2023-12-31 20:46:55,698][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:47:02,979][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:47:03,399][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:47:03,403][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:47:05,155][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:47:35,228][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:47:35,647][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:47:35,649][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:47:37,448][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:48:38,834][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:48:39,433][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:48:39,436][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:48:41,442][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:57:08,969][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:57:09,618][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:57:09,621][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:57:11,648][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 20:59:34,780][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 20:59:35,396][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:59:35,400][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 20:59:37,488][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2023-12-31 21:01:38,405][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2023-12-31 21:01:38,769][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 21:01:38,771][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2023-12-31 21:01:40,595][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 18:00:13,618][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 18:00:13,832][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 18:00:13,835][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 18:00:15,720][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 18:00:33,425][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 18:00:33,562][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 18:00:33,569][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 18:00:35,305][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 19:07:50,325][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 19:07:50,410][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:07:50,415][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:07:52,243][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 19:09:14,253][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 19:09:14,342][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:09:14,350][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:09:16,181][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 19:09:19,365][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 19:09:19,366][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 19:09:56,435][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 19:09:56,598][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:09:56,601][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:09:58,393][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-10-21 19:10:39,968][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-10-21 19:10:41,048][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:10:41,052][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-10-21 19:10:43,548][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2024-10-21 19:10:54,341][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2024-10-21 19:10:55,876][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>

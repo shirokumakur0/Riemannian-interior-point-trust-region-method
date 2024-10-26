@@ -1,0 +1,2 @@
+maxtime,maxiter,tolresid,quadoptim_type,quadoptim_eigvalcorr,quadoptim_eigvalthld,quadoptim_maxiter,quadoptim_basis,rho,tau,beta,gamma,linesearch_max,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
+100,100,1e-06,reghess,1e-08,1e-05,400,,1,0.5,0.9,0.25,400,1,<function RSQO.__init__.<locals>.<lambda> at 0x11b33d6c0>,<function RSQO.__init__.<locals>.<lambda> at 0x128511080>,True,Model_Ob-1-a,KKT residual tolerance reached; current residual=1.2105920248288953e-07 and tolresid=1e-06 after 3.17 seconds

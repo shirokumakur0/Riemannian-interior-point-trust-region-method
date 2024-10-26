@@ -1,0 +1,25 @@
+# This is a configuration file for dataset generation in nonnegative principal component analysis.
+# The file will be passed to instances of a series of Generator() in which
+# data are generated according to the setting in this configuration file.
+
+# Hyperparameters
+dim: 250
+snr: 0.5
+delta: 0.7
+
+# Setting for data generation.
+problem_name: 'NonnegPCA'
+instance_name: 3  # can be swept by multi-run
+initialpoints: ["a","b","c"]  # the list of initial points' names.
+output_path: dataset/${problem_name}/${instance_name}
+### NOTE ###
+# Data folders are created as 'dataset/${problem_name}/${instance_name}'.
+# Initial points are stored in each ${instance_name} folder.
+
+# Sweep settings
+hydra:
+  run:
+    dir: dataset/${problem_name}
+  sweeper:
+    params:
+      instance_name: 1,2,3

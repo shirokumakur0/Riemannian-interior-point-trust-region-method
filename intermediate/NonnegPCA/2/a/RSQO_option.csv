@@ -1,0 +1,2 @@
+maxtime,maxiter,tolresid,quadoptim_type,quadoptim_eigvalcorr,quadoptim_eigvalthld,quadoptim_maxiter,quadoptim_basis,rho,tau,beta,gamma,linesearch_max,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
+3600,25,1e-10,reghess,1e-08,1e-05,400,,1,0.5,0.9,0.25,400,2,<function manviofun at 0x104cd4680>,<function RSQO.__init__.<locals>.<lambda> at 0x14202ea20>,True,NonnegPCA-2-a,Max iteration count reached; maxiter=25 after 67.49 seconds
