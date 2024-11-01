@@ -110,7 +110,7 @@ class Coordinator(problem_coordinator.Coordinator):
 
     # Set Lagrange multipliers for equality constraints
     def set_initialeqLagmult(self):
-        return []
+        return np.array([])
 
 @hydra.main(version_base=None, config_path=".", config_name="config_simulation")
 def main(cfg):

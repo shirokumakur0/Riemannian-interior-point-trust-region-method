@@ -142,7 +142,7 @@ def orthogonalize(manifold, x, A):
     Orthogonalize the basis vectors with respect to the metric at x.
     """
     n = len(A)
-    Q = np.empty_like(A)
+    Q = np.empty_like(A)  # Note: np.empty_like is not suited for product manifolds.
     R = np.zeros((n, n))
     for j in range(n):
         v = copy.deepcopy(A[j])

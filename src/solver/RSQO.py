@@ -39,11 +39,11 @@ class RSQO(Solver):
             'tolresid': 1e-6,
 
             # Quadratic optimization setting
-            'quadoptim_type': 'reghess',  # 'reghess', 'reghess_implicit'
+            'quadoptim_type': 'reghess',  # 'reghess', 'reghess_implicit', 'eye'
             'quadoptim_eigvalcorr': 1e-8,
-            'quadoptim_eigvalthld': 1e-5,
+            'quadoptim_eigvalthld': 1e-3,
             'quadoptim_maxiter': 400,
-            'quadoptim_basis': None,
+            'quadoptim_basisfun': lambda manifold, x, dim: tangentorthobasis(manifold, x, dim),
 
             # Line search setting
             'rho': 1,
@@ -111,6 +111,7 @@ class RSQO(Solver):
         # Set parameters for quadratic optimization
         quadoptim_eigvalthld = option["quadoptim_eigvalthld"]
         quadoptim_eigvalcorr = option["quadoptim_eigvalcorr"]
+        quadoptim_basisfun = option["quadoptim_basisfun"]
 
         # The first evaluation and logging
         manviofun = option["manviofun"]
@@ -156,24 +157,32 @@ class RSQO(Solver):
 
             # Compute the Hessian matrix
             if option["quadoptim_type"] == 'reghess':
-                orthobasis = tangentorthobasis(manifold, xCur, manifold.dim)
+                orthobasis = quadoptim_basisfun(manifold, xCur, manifold.dim)
+                # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
                 Q, _ = hessianmatrix(Lagproblem, xCur, basis=orthobasis)
-                eigenvalues, eigenvectors = np.linalg.eig(Q)
+                eigenvalues, eigenvectors = np.linalg.eigh(Q)
                 for i in range(len(eigenvalues)):
                     if eigenvalues[i] < quadoptim_eigvalthld:
                         eigenvalues[i] = quadoptim_eigvalcorr
+                eigenvalues = np.real(eigenvalues)
                 Q = eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
                 Q = 0.5 * (Q + Q.T)
                 Q = np.real(Q)
                 Q = matrix(Q)
-                # print("Q.shape", Q.size)
                 # print(Q)
             elif option["quadoptim_type"] == 'reghess_implicit':
                 w, orthobasis = hessianspectrum(Lagproblem, xCur)
                 w = np.where(w <= quadoptim_eigvalthld, quadoptim_eigvalcorr, w)
                 Q = spmatrix(w, range(len(w)), range(len(w)))
+            elif option["quadoptim_type"] == 'eye':
+                orthobasis = quadoptim_basisfun(manifold, xCur, manifold.dim)
+                # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
+                Q = np.eye(manifold.dim)
+                Q = matrix(Q)
+                # print("Q.shape", Q.size)
+                # print(Q)
             else:
-                raise ValueError("quadoptim_type must be 'reghess' or 'reghess_implicit'")
+                raise ValueError("quadoptim_type must be 'reghess', 'reghess_implicit', or 'eye'.")
 
             # Compute the first-order term in the objective function
             fproblem = pymanopt.Problem(manifold, costfun)
@@ -219,6 +228,7 @@ class RSQO(Solver):
             if verbosity <=1:
                 solvers.options['show_progress'] = False
 
+            
             # Solve the subproblem
             sol = solvers.qp(P=Q, q=p, G=G, h=h, A=A, b=b)
             coeff = np.array(sol['x']).T[0]
@@ -354,11 +364,11 @@ class RSQO(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../Model_Ob", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/NonnegPCA')
+    sys.path.append('./src/Model_Ob')
     import coordinator
 
     # Call a problem coordinator

@@ -48,6 +48,7 @@ class RALM(Solver):
             'tau': 0.8,
             'thetarho': 0.3,
             'numOuterItertgn': 30,
+            'LagmultUnbdUpdate': False,
 
             # Inner loop setting
             'innersubsolver': "SteepestDescent",
@@ -112,6 +113,13 @@ class RALM(Solver):
         thetarho = option["thetarho"]
         endingtolgradnorm = option["endingtolgradnorm"]
         verbosity = option["verbosity"]
+        LagmultUnbdUpdate = option["LagmultUnbdUpdate"]
+        # Construct ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points.
+        # The update is based on the paper by Yamakawa and Sato (https://link.springer.com/article/10.1007/s10589-021-00336-w).
+        if LagmultUnbdUpdate:  # set the unbounded initial Lagrange multipliers
+            print("Lagrange multipliers unbounded update is True")
+            ineqLagCurUnbd = copy.deepcopy(ineqLagCur)
+            eqLagCurUnbd = copy.deepcopy(eqLagCur)
 
         # Set the subsolver
         innersubsolver = option["innersubsolver"]
@@ -170,6 +178,20 @@ class RALM(Solver):
                                    initial_point=xCur)
             xCur = result.point
 
+            # Construct ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points.
+            # The update is based on the paper by Yamakawa and Sato.
+            if LagmultUnbdUpdate:
+                if ineqconstraints.has_constraint:
+                    for idx in range(ineqconstraints.num_constraint):
+                        ineqcstrfun = ineqconstraints.constraint[idx]
+                        ineqcost = ineqcstrfun(xCur)
+                        ineqLagCurUnbd[idx] = max(0, ineqLagCur[idx] + rho * ineqcost)
+                if eqconstraints.has_constraint:
+                    for idx in range(eqconstraints.num_constraint):
+                        eqcstrfun = eqconstraints.constraint[idx]
+                        eqcost = eqcstrfun(xCur)
+                        eqLagCurUnbd[idx] = eqLagCur[idx] + rho * eqcost
+
             # Update Lagrange multipliers
             newacc = 0
             if ineqconstraints.has_constraint:
@@ -188,7 +210,7 @@ class RALM(Solver):
             # Update rho.
             # Attention: the following update strategy has been adopted
             # in the Matlab imprementation in Github by losangle (https://github.com/losangle/Optimization-on-manifolds-with-extra-constraints)
-            # In the original paper (https://arxiv.org/abs/1901.10000),
+            # In the original paper by Liu and Boumal (https://arxiv.org/abs/1901.10000),
             # the correct condition seems to be 'OuterIter != 0 and newacc > tau * oldacc'
             if OuterIteration == 0 or newacc > tau * oldacc:
                 rho = rho/thetarho
@@ -196,8 +218,18 @@ class RALM(Solver):
             tolgradnorm = max(endingtolgradnorm, tolgradnorm * thetatolgradnorm)
 
             # Evaluation and logging
-            eval_log = evaluation(problem, xPrev, xCur, ineqLagCur, eqLagCur, manviofun, callbackfun)
-            solver_log = self.solver_status(rho, ineqLagCur, eqLagCur, ineqconstraints, eqconstraints)
+            # Set ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points (the update is based on the paper by Yamakawa and Sato.)
+            # Otherwise, use ineqLagCur and eqLagCur for the evaluation based on the paper by Liu and Boumal.
+            if ineqconstraints.has_constraint and LagmultUnbdUpdate:
+                ineqLagEval = ineqLagCurUnbd
+            else:
+                ineqLagEval = ineqLagCur
+            if eqconstraints.has_constraint and LagmultUnbdUpdate:
+                eqLagEval = eqLagCurUnbd
+            else:
+                eqLagEval = eqLagCur
+            eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
+            solver_log = self.solver_status(rho, ineqLagEval, eqLagEval, ineqconstraints, eqconstraints)
             self.add_log(OuterIteration, start_time, eval_log, solver_log)
 
             # Update previous x and residual
@@ -208,8 +240,8 @@ class RALM(Solver):
 
         # After exiting while loop, we return the final output
         output = Output(x=xCur,
-                        ineqLagmult=ineqLagCur,
-                        eqLagmult=eqLagCur,
+                        ineqLagmult=ineqLagEval,
+                        eqLagmult=eqLagEval,
                         option=copy.deepcopy(self.option),
                         log=self.log)
         

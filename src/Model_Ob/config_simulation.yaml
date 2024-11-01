@@ -26,7 +26,7 @@ solver_option:
       maxiter: 100  # max iteration as a stopping criterion
       tolresid: 1e-12  # tolerance of residual based on KKT conditions as a stopping criterion
       verbosity: 1
-      wandb_logging: True  # Set True for sending the experimental results to wandb
+      wandb_logging: False  # Set True for sending the experimental results to wandb
       wandb_project: ${problem_name}-${problem_instance}-${problem_initialpoint}  # project name in wandb
     # Settings specific to each solver
     RALM:

@@ -136,6 +136,7 @@ class Coordinator(problem_coordinator.Coordinator):
         dataset_path = self.dataset_path
         path = f'{dataset_path}/initineqLagmult.csv'
         initialineqLagmult = np.loadtxt(path)
+        initialineqLagmult = np.array(initialineqLagmult)
         return initialineqLagmult
 
     # Set Lagrange multipliers for equality constraints

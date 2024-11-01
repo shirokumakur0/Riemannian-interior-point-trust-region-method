@@ -3,7 +3,12 @@
 /src/solver/sandbox_14.py
 /src/solver/sandbox.py
 /src/solver/RIPTRM.py
-/src/solver/RIPM.py
+/tuning
+/src/template
+/src/solver/RIPM_nonRepMat.py
+/src/solver/RALM_NonAKKT.py
+/src/solver/solver_template.py
+
 
 .DS_Store
 .hydra

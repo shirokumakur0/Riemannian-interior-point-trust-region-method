@@ -11,22 +11,7 @@ from base_solver import Solver, BaseOutput
 @dataclass
 class Output(BaseOutput):
     ineqLagmult: field(default_factory=list)
-    eqLagmult: field(default_factory=list)
-
-# ell_1 penalty function for line search
-def ell_1penaltyfun(point, rho, costfun, ineqconstraints, eqconstraints):
-    val = costfun(point)
-    cstrvio = 0
-    if ineqconstraints.has_constraint:
-        for idx in range(ineqconstraints.num_constraint):
-            funval = (ineqconstraints.constraint[idx])(point)
-            cstrvio += max(0, funval)
-    if eqconstraints.has_constraint:
-        for idx in range(eqconstraints.num_constraint):
-            funval = (eqconstraints.constraint[idx])(point)
-            cstrvio += abs(funval)
-    val += rho * cstrvio
-    return val
+    # eqLagmult: field(default_factory=list)
 
 # Riemannian interior point trust region method
 class RIPTRM(Solver):
@@ -145,27 +130,27 @@ class RIPTRM(Solver):
 
 
             # Line search
-            f0 = ell_1penaltyfun(xCur, rho, costfun, ineqconstraints, eqconstraints)
-            gammadf0 = gamma * df0
-            stepsize = 1
-            newx = manifold.retraction(xCur, stepsize * dir)
-            newf = ell_1penaltyfun(newx, rho, costfun, ineqconstraints, eqconstraints)
-            linesearch_status = 1
-            linesearch_counter = 0
-            while newf > f0 - stepsize * gammadf0:
-                linesearch_counter += 1
-                if linesearch_counter >= option["linesearch_max"]:
-                    linesearch_status = 0
-                    break
-                stepsize *= beta
-                gammadf0 *= beta
-                newx = manifold.retraction(xCur, stepsize * dir)
-                newf = ell_1penaltyfun(newx, rho, costfun, ineqconstraints, eqconstraints)
+            # f0 = ell_1penaltyfun(xCur, rho, costfun, ineqconstraints, eqconstraints)
+            # gammadf0 = gamma * df0
+            # stepsize = 1
+            # newx = manifold.retraction(xCur, stepsize * dir)
+            # newf = ell_1penaltyfun(newx, rho, costfun, ineqconstraints, eqconstraints)
+            # linesearch_status = 1
+            # linesearch_counter = 0
+            # while newf > f0 - stepsize * gammadf0:
+            #     linesearch_counter += 1
+            #     if linesearch_counter >= option["linesearch_max"]:
+            #         linesearch_status = 0
+            #         break
+            #     stepsize *= beta
+            #     gammadf0 *= beta
+            #     newx = manifold.retraction(xCur, stepsize * dir)
+            #     newf = ell_1penaltyfun(newx, rho, costfun, ineqconstraints, eqconstraints)
 
-            # Update vriables
-            xCur = newx
-            ineqLagCur = ineqLagsol
-            eqLagCur = eqLagsol
+            # Update variables
+            # xCur = newx
+            # ineqLagCur = ineqLagsol
+            # eqLagCur = eqLagsol
 
             # Evaluation and logging
             eval_log = evaluation(problem, xPrev, xCur, ineqLagCur, eqLagCur, manviofun, callbackfun)
