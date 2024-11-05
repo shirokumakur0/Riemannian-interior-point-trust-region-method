@@ -12,11 +12,11 @@ def build_Lagrangefun(ineqLagmult, eqLagmult, costfun, ineqconstraints, eqconstr
         if ineqconstraints.has_constraint:
             for idx in range(ineqconstraints.num_constraint):
                 funval = (ineqconstraints.constraint[idx])(point)
-                val += ineqLagmult[idx] * funval
+                val = val + ineqLagmult[idx] * funval
         if eqconstraints.has_constraint:
             for idx in range(eqconstraints.num_constraint):
                 funval = (eqconstraints.constraint[idx])(point)
-                val += eqLagmult[idx] * funval
+                val = val + eqLagmult[idx] * funval
         return val
     return Lagrangefun
 
@@ -61,6 +61,8 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
                                     ineqconstraints=ineqconstraints,
                                     eqconstraints=eqconstraints,
                                     manifold=manifold)
+    # print("on my way")
+    # print("costLagfun in eval: ", Lagfun(x))
     Lagproblem = pymanopt.Problem(manifold, Lagfun)
 
     # Compute violation of gradient of the Lagrange function
@@ -84,7 +86,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
             violation = max(-valLag, 0)
             squared_nonnegvio += violation ** 2
 
-    # Compute the errors of ineqiality/equality constraints
+    # Compute the errors of inequality/equality constraints
     squared_ineqvio = 0
     if ineqconstraints.has_constraint:
         for idx in range(ineqconstraints.num_constraint):
@@ -105,7 +107,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
                         + squared_nonnegvio
                         + squared_ineqvio
                         + squared_eqvio)
-
+    
     # Compute manifold violation
     manvio =  manviofun(problem, x)
     residual = KKTresid + manvio
@@ -252,3 +254,49 @@ def hessianspectrum(problem, x, threshold=1e-9):
     # v = np.where(np.abs(v.imag) <= threshold, v.real, v)
     v = v.astype(tgtvec_type)
     return w, v
+
+def operator2matrix(Mx, x, y, F, Bx=None, By=None, My=None):
+    # Forms a matrix representing a linear operator between two tangent spaces
+    #
+    # Given a manifold structure M, two points x and y on that manifold, a
+    # function F encoding a linear operator from the tangent space T_x M to the
+    # tangent space T_y M, and the orthonomal vectors in T_x M and T_y M,
+    # this tool forms the matrix A which
+    # represents the operator F in those bases. In particular, the singular
+    # values of A are equal to the singular values of F. If two manifold
+    # structures are passed, then x is a point on Mx and y is a point on My.
+    #
+    # The matrix A represents the linear operator F restricted to the span of Bx, composed
+    # with orthogonal projection to the span of By. Of course, if Bx and By are
+    # orthonormal bases of T_x M and T_y M, then this is simply a
+    # representation of F. Same comment if two manifolds are passed.
+
+    if My is None:
+        My = Mx
+    
+    if Bx is None:
+        Bx = tangentorthobasis(Mx, x, Mx.dim)
+    if By is None:
+        By = tangentorthobasis(My, y, My.dim)
+
+    n_in = len(Bx)
+    n_out = len(By)
+    # print("n_in, n_out", n_in, n_out)
+    A = np.zeros((n_out, n_in))
+    # print("A before", A)
+    for j in range(n_in):
+        FBxj = F(Bx[j])
+        A[:, j] = tangent2vec(My, y, By, FBxj)
+        # print(f"A[:, {j}]",A)
+        # for i in range(n_out):
+        #     A[i, j] = My.inner_product(y, FBxj, By[i])
+    # print("A", A, A.shape)
+    return A
+
+def tangent2vec(M, x, basis, u):
+    n = len(basis)
+    vec =np.zeros(n)
+    for k in range(n):
+        # print("basis[k]", basis[k], "u", u)
+        vec[k] = M.inner_product(x, basis[k], u)
+    return vec

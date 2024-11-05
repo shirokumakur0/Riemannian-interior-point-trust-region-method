@@ -364,11 +364,11 @@ class RSQO(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../Model_Ob", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/Model_Ob')
+    sys.path.append('./src/NonnegPCA')
     import coordinator
 
     # Call a problem coordinator

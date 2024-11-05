@@ -1,7 +1,7 @@
 import hydra, copy, time, pymanopt, wandb
 import numpy as np
 from dataclasses import dataclass, field
-from utils import evaluation, tangentorthobasis
+from utils import evaluation, tangentorthobasis, operator2matrix, tangent2vec
 from scipy import linalg
 
 import sys
@@ -226,51 +226,7 @@ def RepresentMatMethod(Aw, Hxaj, cq, xy_manifold, xy, xbasis, ybasis):
     # print("NTdir now", NTdir)
     return NTdir, RepresentMat, RepresentMatOrder
     
-def operator2matrix(Mx, x, y, F, Bx=None, By=None, My=None):
-    # Forms a matrix representing a linear operator between two tangent spaces
-    #
-    # Given a manifold structure M, two points x and y on that manifold, a
-    # function F encoding a linear operator from the tangent space T_x M to the
-    # tangent space T_y M, and the orthonomal vectors in T_x M and T_y M,
-    # this tool forms the matrix A which
-    # represents the operator F in those bases. In particular, the singular
-    # values of A are equal to the singular values of F. If two manifold
-    # structures are passed, then x is a point on Mx and y is a point on My.
-    #
-    # The matrix A represents the linear operator F restricted to the span of Bx, composed
-    # with orthogonal projection to the span of By. Of course, if Bx and By are
-    # orthonormal bases of T_x M and T_y M, then this is simply a
-    # representation of F. Same comment if two manifolds are passed.
 
-    if My is None:
-        My = Mx
-    
-    if Bx is None:
-        Bx = tangentorthobasis(Mx, x, Mx.dim)
-    if By is None:
-        By = tangentorthobasis(My, y, My.dim)
-
-    n_in = len(Bx)
-    n_out = len(By)
-    # print("n_in, n_out", n_in, n_out)
-    A = np.zeros((n_out, n_in))
-    # print("A before", A)
-    for j in range(n_in):
-        FBxj = F(Bx[j])
-        A[:, j] = tangent2vec(My, y, By, FBxj)
-        # print(f"A[:, {j}]",A)
-        # for i in range(n_out):
-        #     A[i, j] = My.inner_product(y, FBxj, By[i])
-    # print("A", A, A.shape)
-    return A
-
-def tangent2vec(M, x, basis, u):
-    n = len(basis)
-    vec =np.zeros(n)
-    for k in range(n):
-        # print("basis[k]", basis[k], "u", u)
-        vec[k] = M.inner_product(x, basis[k], u)
-    return vec
 
 class RIPM(Solver):
     def __init__(self, option):
@@ -421,6 +377,7 @@ class RIPM(Solver):
                             PhiCur,
                             sigma,
                             rho,
+                            KrylovIterMethod=KrylovIterMethod,
                             checkNTequation=checkNTequation
                             )
 
@@ -474,8 +431,10 @@ class RIPM(Solver):
             OperatorT = build_operatorT(OperatorAw, OperatorHx, OperatorHxaj, eqconstraints)
 
             # Solve the condensed NT equation T(dxdy) = cq.
+            solve_info = []
             if KrylovIterMethod:
-                NTdirdxdy, t, rel_res, info = TangentSpaceConjResMethod(OperatorT, cq, v0, xy_manifold, xyCur, KrylovTolrelresid, KrylovMaxIteration)
+                NTdirdxdy, t, rel_res, _ = TangentSpaceConjResMethod(OperatorT, cq, v0, xy_manifold, xyCur, KrylovTolrelresid, KrylovMaxIteration)
+                solve_info = [t, rel_res]
             else:
                 # print(xy_manifold.dim)
                 # print(tangentorthobasis(xy_manifold, xyCur, xy_manifold.dim))
@@ -489,7 +448,7 @@ class RIPM(Solver):
                 ybasis = np.eye(eqconstraints.num_constraint)
                 # basis = [[xb, np.zeros(eqconstraints.num_constraint)] for xb in xbasis] + [[np.zeros(manifold.dim), yb] for yb in ybasis]
                 # print("Basis", basis)
-                NTdirdxdy, mat, order = RepresentMatMethod(OperatorAw, OperatorHxaj, cq, xy_manifold, xyCur, xbasis, ybasis)
+                NTdirdxdy, _, _ = RepresentMatMethod(OperatorAw, OperatorHxaj, cq, xy_manifold, xyCur, xbasis, ybasis)
                 # print(NTdir)
                 """ここなんとかする"""
             
@@ -616,6 +575,8 @@ class RIPM(Solver):
                       stepsize=stepsize,
                       linesearch_status=ls_max_steps_flag,
                       linesearch_counter=r,
+                      KrylovIterMethod=KrylovIterMethod,
+                      solve_info=solve_info,
                       checkNTequation=checkNTequation,
                       NTdir_info=NTdir_info
                       )
@@ -652,6 +613,8 @@ class RIPM(Solver):
                       stepsize=None,
                       linesearch_status=None,
                       linesearch_counter=None,
+                      KrylovIterMethod=None,
+                      solve_info=None,
                       checkNTequation=False,
                       NTdir_info=None
                       ):
@@ -672,6 +635,17 @@ class RIPM(Solver):
         solver_status["stepsize"] = stepsize
         solver_status["linesearch_status"] = linesearch_status
         solver_status["linesearch_counter"] = linesearch_counter
+        
+        if KrylovIterMethod:
+            if solve_info is not None:
+                t, rel_res = solve_info
+                solver_status["KrylovIterMethod"] = KrylovIterMethod
+                solver_status["KrylovIterMethod_Iter"] = t
+                solver_status["KrylovIterMethod_RelRes"] = rel_res
+            else:
+                solver_status["KrylovIterMethod"] = None
+                solver_status["KrylovIterMethod_Iter"] = None
+                solver_status["KrylovIterMethod_RelRes"] = None
         
         if checkNTequation:
             if NTdir_info is not None:

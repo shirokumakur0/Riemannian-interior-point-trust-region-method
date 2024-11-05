@@ -3,10 +3,10 @@
 # an optimization problem is solved according to this configuration.
 
 problem_name: 'NonnegPCA'
-problem_instance: 1  # can be swept by multi-run
+problem_instance: 2  # can be swept by multi-run
 problem_initialpoint: a  # can be swept by multi-run
 problem_coordinator_name: "coordinator"  # called in simulator to set a problem
-solver_name: ["RSQO", "RALM"]
+solver_name: ["RIPTRM"]
 
 solver_option:
     # Common settings: stopping criteria and wandb setting
@@ -16,7 +16,7 @@ solver_option:
       tolresid: 1e-10  # tolerance of residual based on KKT conditions as a stopping criterion
       wandb_logging: False  # Set True for sending the experimental results to wandb
       wandb_project: ${problem_name}-${problem_instance}-${problem_initialpoint}  # project name in wandb
-      verbosity: 1  # verbosity of solver
+      verbosity: 2  # verbosity of solver
     # Settings specific to each solver
     RALM:
       rho: 0.1

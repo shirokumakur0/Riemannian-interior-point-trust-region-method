@@ -38,10 +38,19 @@ class InitialPointGenerator(dataset_generator.Generator):
         dim = self.cfg.dim
 
         # Generating initial points
-        for initpt in initialpoints:
-            x0 = np.random.rand(dim)
-            x0 = x0 / np.linalg.norm(x0)
-            setattr(data, f'initx_{initpt}', x0)
+        if self.cfg.initialpoints_type == 'random':
+            for initpt in initialpoints:
+                x0 = np.random.rand(dim)
+                x0 = x0 / np.linalg.norm(x0)
+                setattr(data, f'initx_{initpt}', x0)
+        elif self.cfg.initialpoints_type == 'feasible':
+            for initpt in initialpoints:
+                x0 = np.random.rand(dim)
+                x0 = x0 / np.linalg.norm(x0)
+                x0 = np.abs(x0)
+                setattr(data, f'initx_{initpt}', x0)
+        else:
+            raise ValueError(f'Initial point type {self.cfg.initialpoints_type} is not supported.')
         return data
 
 # Generator for initial Lagrange multipliers

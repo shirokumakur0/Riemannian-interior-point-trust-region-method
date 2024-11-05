@@ -11,6 +11,7 @@ delta: 0.7
 problem_name: 'NonnegPCA'
 instance_name: 3  # can be swept by multi-run
 initialpoints: ["a","b","c"]  # the list of initial points' names.
+initialpoints_type: 'feasible'  # 'random' or 'feasible'
 output_path: dataset/${problem_name}/${instance_name}
 ### NOTE ###
 # Data folders are created as 'dataset/${problem_name}/${instance_name}'.
