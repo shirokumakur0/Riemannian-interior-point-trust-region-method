@@ -22,6 +22,7 @@ class Problem(problem_coordinator.BaseProblem):
     eqconstraints: Constraints
     ineqconstraints: Constraints
 
+
 # Problem coordinator for nonnegative principal component analysis
 class Coordinator(problem_coordinator.Coordinator):
 
@@ -115,8 +116,6 @@ class Coordinator(problem_coordinator.Coordinator):
                                       num_constraint = 1,
                                       constraint = constraint)
         return eqconstraints
-    
-    
     
     # Set initial points with initial Lagrange multipliers
     def set_initialpoint(self):

@@ -11,6 +11,15 @@
 /src/solver/RALM_NonAKKT.py
 /src/solver/solver_template.py
 
+/dataset/PackingCircles
+/intermediate/PackingCircles
+/src/PackingCircles
+/src/StableSystem
+/src/solfer/1118_RIPTRM.py
+/src/solver/sandbox2.py
+/src/solver/sandbox3.py
+/src/solver/sandbox4.py
+
 
 .DS_Store
 .hydra

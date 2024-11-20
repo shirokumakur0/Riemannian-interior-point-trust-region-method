@@ -112,3 +112,115 @@
 [2024-11-03 22:53:00,809][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
 [2024-11-03 22:53:15,663][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
 [2024-11-03 22:53:15,663][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-06 23:57:22,703][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-06 23:57:22,900][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-06 23:57:22,905][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-06 23:57:25,717][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2024-11-06 23:57:30,298][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2024-11-06 23:57:30,843][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-11-06 23:57:35,950][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2024-11-06 23:57:36,427][base_simulator][INFO] - Running a solver of class <class 'RIPM.RIPM'>
+[2024-11-07 14:54:18,072][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-07 14:54:18,255][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-07 14:54:18,261][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-07 14:54:20,017][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2024-11-07 14:54:26,268][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2024-11-07 14:54:26,810][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-11-07 14:54:31,792][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2024-11-07 14:54:32,243][base_simulator][INFO] - Running a solver of class <class 'RIPM.RIPM'>
+[2024-11-12 19:56:23,489][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 19:56:23,970][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 19:56:23,972][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 19:56:24,520][base_simulator][INFO] - Running a solver of class <class 'EuclideanIPTRM.EuclideanIPTRM'>
+[2024-11-12 19:56:24,642][base_simulator][INFO] - Finished running a solver of class <class 'EuclideanIPTRM.EuclideanIPTRM'>
+[2024-11-12 19:56:24,643][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 19:59:46,868][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 19:59:47,688][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 19:59:47,691][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 19:59:48,498][base_simulator][INFO] - Running a solver of class <class 'EuclideanIPTRM.EuclideanIPTRM'>
+[2024-11-12 19:59:48,618][base_simulator][INFO] - Finished running a solver of class <class 'EuclideanIPTRM.EuclideanIPTRM'>
+[2024-11-12 19:59:48,618][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-13 18:58:36,670][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-13 18:58:37,150][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-13 18:58:37,151][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-13 18:58:37,647][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-11-13 18:58:39,064][base_simulator][INFO] - Finished running a solver of class <class 'RSQO.RSQO'>
+[2024-11-13 18:58:39,064][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-13 23:28:44,881][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-13 23:28:45,431][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-13 23:28:45,432][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-13 23:28:46,167][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 15:42:04,924][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 15:42:05,396][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 15:42:05,402][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 15:42:06,107][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 15:42:29,481][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 15:42:29,482][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 16:18:39,027][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 16:18:39,498][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 16:18:39,504][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 16:18:40,003][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 16:18:59,052][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 16:18:59,052][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 20:11:40,949][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 20:11:41,717][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:11:41,722][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:11:42,547][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 20:12:24,605][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 20:12:24,901][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:12:24,906][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:12:25,415][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 20:12:46,929][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 20:12:46,929][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 20:30:37,023][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-17 20:30:37,466][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:30:37,471][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-17 20:30:38,194][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 20:31:02,155][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-17 20:31:02,155][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-18 14:32:24,272][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 14:32:24,744][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 14:32:24,746][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 14:32:25,330][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 14:32:28,911][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 14:32:28,911][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 14:58:01,635][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-18 14:58:02,126][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 14:58:02,131][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 14:58:02,707][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 15:00:45,791][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 2, initial point: a
+[2024-11-18 15:00:46,296][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 15:00:46,301][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 15:00:46,875][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 15:02:36,040][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 15:02:36,532][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 15:02:36,534][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 15:02:37,118][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 15:03:47,705][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 15:03:47,715][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 22:21:18,376][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 22:21:18,855][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 22:21:18,857][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 22:21:19,455][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 22:22:22,413][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 22:22:22,413][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 22:24:03,360][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-18 22:24:03,812][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 22:24:03,814][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-18 22:24:04,405][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 22:25:08,849][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-18 22:25:08,850][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-19 14:46:38,582][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-19 14:46:39,150][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-19 14:46:39,151][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-19 14:46:39,661][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-19 14:46:56,217][base_simulator][INFO] - Finished running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-19 14:46:56,217][base_simulator][INFO] - Finished running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-19 22:26:01,062][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-19 22:26:01,524][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-19 22:26:01,526][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-19 22:26:02,290][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>
+[2024-11-20 20:13:53,823][base_simulator][INFO] - Running a simulator of class <class '__main__.Simulator'> -- instance: 1, initial point: a
+[2024-11-20 20:13:54,150][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-20 20:13:54,152][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-20 20:13:55,326][base_simulator][INFO] - Running a solver of class <class 'RIPTRM.RIPTRM'>

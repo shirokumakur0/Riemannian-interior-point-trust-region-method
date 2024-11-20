@@ -3,7 +3,7 @@
 # an optimization problem is solved according to this configuration.
 
 problem_name: 'NonnegPCA'
-problem_instance: 2  # can be swept by multi-run
+problem_instance: 1  # can be swept by multi-run
 problem_initialpoint: a  # can be swept by multi-run
 problem_coordinator_name: "coordinator"  # called in simulator to set a problem
 solver_name: ["RIPTRM"]
@@ -11,15 +11,13 @@ solver_name: ["RIPTRM"]
 solver_option:
     # Common settings: stopping criteria and wandb setting
     common:
-      maxtime: 3600  # max time of experiments as a stopping criterion
-      maxiter: 100  # max iteration as a stopping criterion
-      tolresid: 1e-10  # tolerance of residual based on KKT conditions as a stopping criterion
-      wandb_logging: False  # Set True for sending the experimental results to wandb
+      maxtime: 10  # max time of experiments as a stopping criterion
+      maxiter: 180  # max iteration as a stopping criterion
+      tolresid: 1e-16  # tolerance of residual based on KKT conditions as a stopping criterion
+      wandb_logging:  False # Set True for sending the experimental results to wandb
       wandb_project: ${problem_name}-${problem_instance}-${problem_initialpoint}  # project name in wandb
-      verbosity: 2  # verbosity of solver
+      # verbosity: 1  # verbosity of solver
     # Settings specific to each solver
-    RALM:
-      rho: 0.1
 ### NOTE ###
 # Experimental results are stored in 'intermediate/${problem_name}/${problem_instance}/${problem_initialpoint}'.
 
@@ -30,6 +28,6 @@ hydra:
     dir: intermediate/${problem_name}
   sweeper:
     params:
-      problem_instance: 1,2,3
+      problem_instance: 1,2  # 1,2,3
       problem_initialpoint: a,b,c
-      solver_name: ["RALM"]
+      solver_name: ["RSQO"]

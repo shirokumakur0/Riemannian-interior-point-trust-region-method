@@ -15,6 +15,10 @@ class Constraints:
     constraint: list = field(default_factory=list)
 
 @dataclass
+class ManifoldConstraints(Constraints):
+    type: list = field(default_factory=list)
+
+@dataclass
 class Problem(problem_coordinator.BaseProblem):
     # costfun: Any
     # initialpoint: Any
@@ -23,6 +27,7 @@ class Problem(problem_coordinator.BaseProblem):
     searchspace: Any
     eqconstraints: Constraints
     ineqconstraints: Constraints
+    maniconstraints: ManifoldConstraints
 
 # Problem coordinator for nonnegative principal component analysis
 class Coordinator(problem_coordinator.Coordinator):
@@ -35,13 +40,16 @@ class Coordinator(problem_coordinator.Coordinator):
         initialpoint = self.set_initialpoint()
         initialineqLagmult = self.set_initialineqLagmult()
         initialeqLagmult = self.set_initialeqLagmult()
+        maniconstraints = self.set_maniconstraints()
         problem = Problem(searchspace=searchspace,
                           costfun=costfun,
                           ineqconstraints=ineqconstraints,
                           eqconstraints=eqconstraints,
                           initialpoint=initialpoint,
                           initialineqLagmult=initialineqLagmult,
-                          initialeqLagmult=initialeqLagmult)
+                          initialeqLagmult=initialeqLagmult,
+                          maniconstraints=maniconstraints
+                          )
         return problem
 
     # Set sphere manifold as a search space
@@ -111,6 +119,20 @@ class Coordinator(problem_coordinator.Coordinator):
     # Set Lagrange multipliers for equality constraints
     def set_initialeqLagmult(self):
         return np.array([])
+
+    # Set nonlinear constraints expressing the sphere manifold
+    # Used for the Euclidean solvers. Not used for the Riemannian solvers.
+    def set_maniconstraints(self):
+        dataset_path = self.dataset_path
+        path = f'{dataset_path}/dim.csv'
+        dim = int(np.loadtxt(path))
+        manifun = lambda point: np.sum(point**2) - 1
+        manifoldconstraints = ManifoldConstraints(has_constraint = True if dim > 0 else False,
+                                      num_constraint = 1,
+                                      constraint = [manifun],
+                                      type = ['eq'])
+        return manifoldconstraints
+
 
 @hydra.main(version_base=None, config_path=".", config_name="config_simulation")
 def main(cfg):

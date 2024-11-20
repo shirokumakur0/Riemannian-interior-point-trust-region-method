@@ -61,14 +61,10 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
                                     ineqconstraints=ineqconstraints,
                                     eqconstraints=eqconstraints,
                                     manifold=manifold)
-    # print("on my way")
-    # print("costLagfun in eval: ", Lagfun(x))
-    Lagproblem = pymanopt.Problem(manifold, Lagfun)
 
-    # Compute violation of gradient of the Lagrange function
-    gradient = Lagproblem.riemannian_gradient
-
-    gradnorm = manifold.norm(x, gradient(x))
+    gradLag = Lagfun.get_gradient_operator()
+    gradientx = manifold.euclidean_to_riemannian_gradient(x, gradLag(x))
+    gradnorm = manifold.norm(x, gradientx)
     squared_gradLagvio =  gradnorm ** 2
 
     # Compute violation of the complementary condition
@@ -101,6 +97,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
             violation = abs(eqcstrfun(x))
             squared_ineqvio += violation ** 2
 
+    """
     # Sum of the above violations
     KKTresid = np.sqrt(squared_gradLagvio
                         + squared_complvio
@@ -111,6 +108,19 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
     # Compute manifold violation
     manvio =  manviofun(problem, x)
     residual = KKTresid + manvio
+    """
+    # Compute manifold violation
+    manvio =  manviofun(problem, x)
+    squared_manvio = manvio ** 2
+    
+    # Sum of the above violations
+    residual = np.sqrt(squared_gradLagvio
+                        + squared_complvio
+                        + squared_nonnegvio
+                        + squared_ineqvio
+                        + squared_eqvio
+                        + squared_manvio
+                        )
 
     return residual, gradnorm
 
@@ -281,22 +291,64 @@ def operator2matrix(Mx, x, y, F, Bx=None, By=None, My=None):
 
     n_in = len(Bx)
     n_out = len(By)
-    # print("n_in, n_out", n_in, n_out)
     A = np.zeros((n_out, n_in))
-    # print("A before", A)
     for j in range(n_in):
         FBxj = F(Bx[j])
         A[:, j] = tangent2vec(My, y, By, FBxj)
-        # print(f"A[:, {j}]",A)
-        # for i in range(n_out):
-        #     A[i, j] = My.inner_product(y, FBxj, By[i])
-    # print("A", A, A.shape)
     return A
+
+def selfadj_operator2matrix(M, x, F, Bx):
+    n = len(Bx)
+    A_mat = np.zeros((n, n))
+    for j in range(n):
+        FBxj = F(Bx[j])
+        for i in range(j+1):
+            A_mat[i, j] = M.inner_product(x, FBxj, (Bx[i]))
+    A_mat = A_mat + np.triu(A_mat, 1).T
+    return A_mat
 
 def tangent2vec(M, x, basis, u):
     n = len(basis)
     vec =np.zeros(n)
     for k in range(n):
-        # print("basis[k]", basis[k], "u", u)
         vec[k] = M.inner_product(x, basis[k], u)
     return vec
+
+def TangentSpaceConjResMethod(A, b, v0, M, x, tol, maxiter):
+    # Conjugate residual method for solving linear operator equation: A(v)=b,
+    # where A is some self-adjoint operator to and from some linear space E,
+    # b is an element in E. Assume the existence of solution v.
+    
+    # Yousef Saad - Iterative methods for sparse linear systems,
+    # 2nd edition-SIAM (2003) P203. ALGORITHM 6.20
+    
+    v = v0  # initialization
+    r = b - A(v)  # r are residuals.
+    p = copy.deepcopy(r)  # p are conjugate directions.
+    b_norm = M.norm(x, b)
+    r_norm = M.norm(x, r)
+    rel_res = r_norm / b_norm
+    Ar = A(r)
+    Ap = A(p)
+    rAr = M.inner_product(x, r, Ar)
+    t = 0  # at t-th iteration
+    info =  np.zeros((maxiter, 2))
+    while True:
+        info[t] = [t, rel_res]
+        t += 1
+        a = rAr / M.inner_product(x, Ap, Ap)  # step length
+        v = v + a * p  # update x # v + a*p
+        r = r - a * Ap  # residual # r - a*Ap
+        r_norm = M.norm(x, r)
+        rel_res = r_norm / b_norm
+        if rel_res < tol or t == maxiter:
+            break
+        Ar = A(r)
+        old_rAr = rAr
+        rAr = M.inner_product(x, r, Ar)
+        beta = rAr / old_rAr  # improvement this step
+        p = r + beta*p  # search direction # r + beta*p
+        Ap = Ar + beta*Ap  # Ar + beta*Ap
+
+    vfinal = v
+    return vfinal, t, rel_res, info

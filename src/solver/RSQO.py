@@ -31,7 +31,7 @@ def ell_1penaltyfun(point, rho, costfun, ineqconstraints, eqconstraints):
 
 class RSQO(Solver):
     def __init__(self, option):
-        # Default setting for augmented Lagrangian method
+        # Default setting for sequential quadratic optimization
         default_option = {
             # Stopping criteria
             'maxtime': 100,
@@ -39,10 +39,14 @@ class RSQO(Solver):
             'tolresid': 1e-6,
 
             # Quadratic optimization setting
-            'quadoptim_type': 'reghess',  # 'reghess', 'reghess_implicit', 'eye'
+            'quadoptim_type': 'reghess',  # 'reghess', 'reghess_operator', 'eye'
             'quadoptim_eigvalcorr': 1e-8,
-            'quadoptim_eigvalthld': 1e-3,
+            'quadoptim_eigvalthld': 1e-5,
             'quadoptim_maxiter': 400,
+            'quadoptim_abstol': 1e-16,
+            'quadoptim_reltol': 1e-16,
+            'quadoptim_feastol': 1e-16,
+
             'quadoptim_basisfun': lambda manifold, x, dim: tangentorthobasis(manifold, x, dim),
 
             # Line search setting
@@ -50,10 +54,11 @@ class RSQO(Solver):
             'tau': 0.5,
             'beta': 0.9,
             'gamma': 0.25,
-            'linesearch_max': 400,
+            'linesearch_max': 10000,
+            'linesearch_threshold': 1e-8,
 
             # Display setting
-            'verbosity': 0,
+            'verbosity': 1,
 
             # Measuring violation for manifold constraints in 'self.compute_residual'
             'manviofun': lambda problem, x: 0,
@@ -70,6 +75,7 @@ class RSQO(Solver):
         self.log = {}  # will be filled in self.add_log
 
         if self.option["wandb_logging"]:
+            wandb.finish()
             _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
                             name = f"RSQO_{self.option['quadoptim_type']}",  # the name of the run
                             config=self.option)  # save hyperparameters and metadata
@@ -131,6 +137,10 @@ class RSQO(Solver):
         tolresid = option["tolresid"]
         residual_criterion = (residual <= tolresid, "KKT residual tolerance reached; current residual=" + str(residual) + " and tolresid=" + str(tolresid))
         stopping_criteria =[residual_criterion]
+        
+        quadoptim_abstol = max(option['quadoptim_abstol'], tolresid)
+        quadoptim_reltol = max(option['quadoptim_reltol'], tolresid)
+        quadoptim_feastol = max(option['quadoptim_feastol'], tolresid)
 
         while True:
             if verbosity:
@@ -169,8 +179,7 @@ class RSQO(Solver):
                 Q = 0.5 * (Q + Q.T)
                 Q = np.real(Q)
                 Q = matrix(Q)
-                # print(Q)
-            elif option["quadoptim_type"] == 'reghess_implicit':
+            elif option["quadoptim_type"] == 'reghess_operator':
                 w, orthobasis = hessianspectrum(Lagproblem, xCur)
                 w = np.where(w <= quadoptim_eigvalthld, quadoptim_eigvalcorr, w)
                 Q = spmatrix(w, range(len(w)), range(len(w)))
@@ -179,14 +188,12 @@ class RSQO(Solver):
                 # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
                 Q = np.eye(manifold.dim)
                 Q = matrix(Q)
-                # print("Q.shape", Q.size)
-                # print(Q)
             else:
-                raise ValueError("quadoptim_type must be 'reghess', 'reghess_implicit', or 'eye'.")
+                raise ValueError("quadoptim_type must be 'reghess', 'reghess_operator', or 'eye'.")
 
             # Compute the first-order term in the objective function
-            fproblem = pymanopt.Problem(manifold, costfun)
-            gradobjxCur = fproblem.riemannian_gradient(xCur)
+            gradf = costfun.get_gradient_operator()
+            gradobjxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradf(xCur))
             p = np.empty(len(orthobasis))
             for i in range(len(orthobasis)):
                 p[i] = manifold.inner_product(xCur, gradobjxCur, orthobasis[i])
@@ -201,8 +208,8 @@ class RSQO(Solver):
                 for i in range(ineqconstraints.num_constraint):
                     ineqcstrfun = ineqconstraints.constraint[i]
                     h[i] = -ineqcstrfun(xCur)
-                    ineqproblem = pymanopt.Problem(manifold, ineqcstrfun)
-                    gradineqxCur = ineqproblem.riemannian_gradient(xCur)
+                    gradineqcstrfun = ineqcstrfun.get_gradient_operator()
+                    gradineqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradineqcstrfun(xCur))
                     for j in range(len(orthobasis)):
                         G[i,j] = manifold.inner_product(xCur, gradineqxCur, orthobasis[j])
                 G = matrix(G)
@@ -218,8 +225,8 @@ class RSQO(Solver):
                 for i in range(eqconstraints.num_constraint):
                     eqcstrfun = eqconstraints.constraint[i]
                     b[i] = -eqcstrfun(xCur)
-                    eqproblem = pymanopt.Problem(manifold, eqcstrfun)
-                    gradeqxCur = eqproblem.riemannian_gradient(xCur)
+                    gradeqcstrfun = eqcstrfun.get_gradient_operator()
+                    gradeqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradeqcstrfun(xCur))
                     for j in range(len(orthobasis)):
                         A[i,j] = manifold.inner_product(xCur, gradeqxCur, orthobasis[j])
                 A = matrix(A)
@@ -228,7 +235,11 @@ class RSQO(Solver):
             if verbosity <=1:
                 solvers.options['show_progress'] = False
 
-            
+            solvers.options['abstol'] =  quadoptim_abstol
+            solvers.options['reltol'] =  quadoptim_reltol
+            solvers.options['feastol'] =  quadoptim_feastol
+
+
             # Solve the subproblem
             sol = solvers.qp(P=Q, q=p, G=G, h=h, A=A, b=b)
             coeff = np.array(sol['x']).T[0]
@@ -243,9 +254,9 @@ class RSQO(Solver):
             # for line search
             Q = np.array(matrix(Q))
             df0 = coeff @ Q @ coeff
-            dir= manifold.zero_vector(xCur)
+            dir = manifold.zero_vector(xCur)
             for i in range(len(coeff)):
-                dir += coeff[i] * orthobasis[i]
+                dir = dir + coeff[i] * orthobasis[i]
 
             # Update rho if necessary
             upsilon = 0
@@ -307,6 +318,10 @@ class RSQO(Solver):
                         eqLagmult=eqLagCur,
                         option=copy.deepcopy(self.option),
                         log=self.log)
+
+        if self.option["wandb_logging"]:
+            wandb.finish()
+            
         return output
 
     # Examine the solver status
@@ -364,11 +379,11 @@ class RSQO(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../Model_Ob", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/NonnegPCA')
+    sys.path.append('./src/Model_Ob')
     import coordinator
 
     # Call a problem coordinator

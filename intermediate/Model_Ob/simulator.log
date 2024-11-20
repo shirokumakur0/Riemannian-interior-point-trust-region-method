@@ -229,3 +229,20 @@
 [2024-10-21 19:10:43,548][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
 [2024-10-21 19:10:54,341][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
 [2024-10-21 19:10:55,876][base_simulator][INFO] - Running a solver of class <class 'RSQO.RSQO'>
+[2024-11-12 20:38:29,102][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 20:38:29,843][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:39:29,396][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 20:39:29,619][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:39:29,621][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:40:16,991][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 20:40:17,220][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:40:17,223][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:40:17,821][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2024-11-12 20:40:33,679][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2024-11-12 20:40:33,679][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 20:41:21,576][base_simulator][INFO] - Running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a
+[2024-11-12 20:41:21,814][base_simulator][INFO] - Running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:41:21,816][base_simulator][INFO] - Finished running a problem coordinator of class <class 'coordinator.Coordinator'>
+[2024-11-12 20:41:22,278][base_simulator][INFO] - Running a solver of class <class 'RALM.RALM'>
+[2024-11-12 20:41:37,170][base_simulator][INFO] - Finished running a solver of class <class 'RALM.RALM'>
+[2024-11-12 20:41:37,170][base_simulator][INFO] - Finished running a simulator of class <class 'base_simulator.Simulator'> -- instance: 1, initial point: a

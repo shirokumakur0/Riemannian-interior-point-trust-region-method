@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from utils import build_Lagrangefun, evaluation
 
+
 import sys
 sys.path.append('./src/base')
 from base_solver import Solver, BaseOutput
@@ -22,11 +23,11 @@ def build_almfun(ineqLagmult, eqLagmult, rho, costfun, ineqconstraints, eqconstr
         if ineqconstraints.has_constraint:
             for idx in range(ineqconstraints.num_constraint):
                 funval = (ineqconstraints.constraint[idx])(point)
-                violation += max(0, (ineqLagmult[idx]/rho) + funval) ** 2 
+                violation = violation + max(0, (ineqLagmult[idx]/rho) + funval) ** 2
         if eqconstraints.has_constraint:
             for idx in range(eqconstraints.num_constraint):
                 funval = (eqconstraints.constraint[idx])(point)
-                violation += (funval + (eqLagmult[idx]/rho)) ** 2
+                violation = violation + (funval + (eqLagmult[idx]/rho)) ** 2
 
         violation *= rho * 0.5
         val += violation
@@ -48,17 +49,17 @@ class RALM(Solver):
             'tau': 0.8,
             'thetarho': 0.3,
             'numOuterItertgn': 30,
-            'LagmultUnbdUpdate': False,
+            'LagmultUnbdUpdate': False,  # True if RALM aims to find AKKT points else False.
 
             # Inner loop setting
-            'innersubsolver': "SteepestDescent",
+            'innersubsolver': "TrustRegions",
             'maxInnerIter': 200,
             'startingtolgradnorm': 1e-3,
             'endingtolgradnorm': 1e-6,
             'innerminstepsize': 1e-10,
 
             # Display setting
-            'verbosity': 0,
+            'verbosity': 1,
 
             # Measuring violation for manifold constraints in 'self.compute_residual'
             'manviofun': lambda problem, x: 0,
@@ -75,8 +76,9 @@ class RALM(Solver):
         self.log = {}  # will be filled in self.add_log
 
         if self.option["wandb_logging"]:
+            wandb.finish()
             _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
-                            name = "RALM",  # the name of the run
+                            name = f"RALM_{self.option['innersubsolver']}",  # the name of the run
                             config=self.option)  # save hyperparameters and metadata
 
     # Running an experiment
@@ -114,10 +116,12 @@ class RALM(Solver):
         endingtolgradnorm = option["endingtolgradnorm"]
         verbosity = option["verbosity"]
         LagmultUnbdUpdate = option["LagmultUnbdUpdate"]
+
         # Construct ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points.
         # The update is based on the paper by Yamakawa and Sato (https://link.springer.com/article/10.1007/s10589-021-00336-w).
         if LagmultUnbdUpdate:  # set the unbounded initial Lagrange multipliers
-            print("Lagrange multipliers unbounded update is True")
+            if verbosity:
+                print("Enabled unbounded updates for the Lagrange multipliers.")
             ineqLagCurUnbd = copy.deepcopy(ineqLagCur)
             eqLagCurUnbd = copy.deepcopy(eqLagCur)
 
@@ -159,7 +163,7 @@ class RALM(Solver):
             # Set augmented Lagrangian
             almfun = build_almfun(ineqLagmult=ineqLagCur,
                                     eqLagmult=eqLagCur,
-                                    rho=rho, 
+                                    rho=rho,
                                     costfun=costfun,
                                     ineqconstraints=ineqconstraints,
                                     eqconstraints=eqconstraints,
@@ -266,26 +270,27 @@ class RALM(Solver):
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/NonnegPCA')
+    sys.path.append('./src/PackingCircles')
     import coordinator
 
     # Call a problem coordinator
-    nonnegPCA_coordinator = coordinator.Coordinator(cfg)
-    problem = nonnegPCA_coordinator.run()
+    coordinator = coordinator.Coordinator(cfg)
+    problem = coordinator.run()
 
     # Solver option setting
     solver_option = cfg.solver_option
     option = copy.deepcopy(dict(solver_option["common"]))
-    specific = dict(getattr(solver_option, "RALM"))
-    option.update(specific)
+    if hasattr(solver_option, "RALM"):
+        specific = dict(getattr(solver_option, "RALM"))
+        option.update(specific)
 
     # Run the experiment
-    ralmsolver = RALM(option)
-    output = ralmsolver.run(problem)
+    solver = RALM(option)
+    output = solver.run(problem)
     print(output)
 
 if __name__=='__main__':

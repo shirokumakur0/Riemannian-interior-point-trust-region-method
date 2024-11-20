@@ -53,6 +53,12 @@ For a visual representation of the relationships and workflow among the modules,
 
 ![simulation_overview](https://github.com/Mathematical-Informatics-5th-Lab/Simulator-Template/assets/38340809/998edf62-0c45-4446-92cf-ac71af04ff4c)
 
+The following optimization problems are available:
+
+- (予定) Packing circles with ellipses
+- (予定) Constrained synchronization of rotations
+- (予定) Constrained two-layer nonlinear neural networks
+
 ## Note
 **1. Wandb visualization**
 
