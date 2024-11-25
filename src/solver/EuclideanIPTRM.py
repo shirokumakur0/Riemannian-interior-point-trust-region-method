@@ -3,8 +3,6 @@ import hydra, copy, time, pymanopt, wandb, scipy
 import numpy as np
 from dataclasses import dataclass, field
 
-from utils import build_Lagrangefun, evaluation
-
 import sys
 sys.path.append('./src/base')
 from base_solver import Solver, BaseOutput
@@ -73,7 +71,7 @@ class EuclideanIPTRM(Solver):
     # Running an experiment
     def run(self, problem):
         # Assertion
-        assert hasattr(problem, 'costfun')
+        assert hasattr(problem, 'cost')
         assert hasattr(problem, 'eqconstraints')
         assert hasattr(problem, 'ineqconstraints')
         assert hasattr(problem, 'initialpoint')
@@ -82,7 +80,7 @@ class EuclideanIPTRM(Solver):
         # assert hasattr(problem, 'initialeqLagmult')
 
         # Set the optimization problem
-        costfun = problem.costfun
+        costfun = problem.cost
         ineqconstraints = problem.ineqconstraints
         eqconstraints = problem.eqconstraints
         maniconstraints = problem.maniconstraints
@@ -110,52 +108,97 @@ class EuclideanIPTRM(Solver):
         # constraint_finite_diff_jac_sparsity = option["constraints_finite_diff_jac_sparsity"]
 
         constraints = []
-        if ineqconstraints.has_constraint:
-            for ineqcstrfun in ineqconstraints.constraint:
-                fun = scipy.optimize.NonlinearConstraint(fun=ineqcstrfun,
-                                                         lb=-np.inf,
-                                                         ub=0,
-                                                        #  jac=constraint_jac,
-                                                        #  hess=constraint_hess,
-                                                        #  keep_feasible=constraint_keep_feasible,
-                                                        #  finite_diff_rel_step=constraint_finite_diff_rel_step,
-                                                        #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
-                                                         )
-                constraints.append(fun)
+        for ineqcstrfun in ineqconstraints:
+            fun = scipy.optimize.NonlinearConstraint(fun=ineqcstrfun,
+                                                        lb=-np.inf,
+                                                        ub=0,
+                                                    #  jac=constraint_jac,
+                                                    #  hess=constraint_hess,
+                                                    #  keep_feasible=constraint_keep_feasible,
+                                                    #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+                                                    #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+                                                        )
+            constraints.append(fun)
 
-        if eqconstraints.has_constraint:
-            for eqcstrfun in eqconstraints.constraint:
-                fun = scipy.optimize.NonlinearConstraint(fun=eqcstrfun,
-                                                         lb=0,
-                                                         ub=0,
-                                                        #  jac=constraint_jac,
-                                                        #  hess=constraint_hess,
-                                                        #  keep_feasible=constraint_keep_feasible,
-                                                        #  finite_diff_rel_step=constraint_finite_diff_rel_step,
-                                                        #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
-                                                         )
-                constraints.append(fun)
+        for eqcstrfun in eqconstraints:
+            fun = scipy.optimize.NonlinearConstraint(fun=eqcstrfun,
+                                                        lb=0,
+                                                        ub=0,
+                                                    #  jac=constraint_jac,
+                                                    #  hess=constraint_hess,
+                                                    #  keep_feasible=constraint_keep_feasible,
+                                                    #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+                                                    #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+                                                        )
+            constraints.append(fun)
         
-        if maniconstraints.has_constraint:
-            for idx in range(maniconstraints.num_constraint):
-                if maniconstraints.type[idx] == 'eq':
-                    lb = 0
-                elif maniconstraints.type[idx] == 'ineq':
-                    lb = -np.inf
-                else:
-                    raise ValueError("maniconstraints.type should be 'eq' or 'ineq'")
-                manicstrfun = maniconstraints.constraint[idx]
-                fun = scipy.optimize.NonlinearConstraint(fun=manicstrfun,
-                                                         lb=lb,
-                                                         ub=0,
-                                                        #  jac=constraint_jac,
-                                                        #  hess=constraint_hess,
-                                                        #  keep_feasible=constraint_keep_feasible,
-                                                        #  finite_diff_rel_step=constraint_finite_diff_rel_step,
-                                                        #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
-                                                         )
+        for idx in range(len(maniconstraints.constraints)):
+            if maniconstraints.type[idx] == 'eq':
+                lb = 0
+            elif maniconstraints.type[idx] == 'ineq':
+                lb = -np.inf
+            else:
+                raise ValueError("maniconstraints.type should be 'eq' or 'ineq'")
+            manicstrfun = maniconstraints.constraints[idx]
+            fun = scipy.optimize.NonlinearConstraint(fun=manicstrfun,
+                                                        lb=lb,
+                                                        ub=0,
+                                                    #  jac=constraint_jac,
+                                                    #  hess=constraint_hess,
+                                                    #  keep_feasible=constraint_keep_feasible,
+                                                    #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+                                                    #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+                                                        )
+            
+            constraints.append(fun)
+
+        # constraints = []
+        # if ineqconstraints.has_constraint:
+        #     for ineqcstrfun in ineqconstraints.constraint:
+        #         fun = scipy.optimize.NonlinearConstraint(fun=ineqcstrfun,
+        #                                                  lb=-np.inf,
+        #                                                  ub=0,
+        #                                                 #  jac=constraint_jac,
+        #                                                 #  hess=constraint_hess,
+        #                                                 #  keep_feasible=constraint_keep_feasible,
+        #                                                 #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+        #                                                 #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+        #                                                  )
+        #         constraints.append(fun)
+
+        # if eqconstraints.has_constraint:
+        #     for eqcstrfun in eqconstraints.constraint:
+        #         fun = scipy.optimize.NonlinearConstraint(fun=eqcstrfun,
+        #                                                  lb=0,
+        #                                                  ub=0,
+        #                                                 #  jac=constraint_jac,
+        #                                                 #  hess=constraint_hess,
+        #                                                 #  keep_feasible=constraint_keep_feasible,
+        #                                                 #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+        #                                                 #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+        #                                                  )
+        #         constraints.append(fun)
+        
+        # if maniconstraints.has_constraint:
+        #     for idx in range(maniconstraints.num_constraint):
+        #         if maniconstraints.type[idx] == 'eq':
+        #             lb = 0
+        #         elif maniconstraints.type[idx] == 'ineq':
+        #             lb = -np.inf
+        #         else:
+        #             raise ValueError("maniconstraints.type should be 'eq' or 'ineq'")
+        #         manicstrfun = maniconstraints.constraint[idx]
+        #         fun = scipy.optimize.NonlinearConstraint(fun=manicstrfun,
+        #                                                  lb=lb,
+        #                                                  ub=0,
+        #                                                 #  jac=constraint_jac,
+        #                                                 #  hess=constraint_hess,
+        #                                                 #  keep_feasible=constraint_keep_feasible,
+        #                                                 #  finite_diff_rel_step=constraint_finite_diff_rel_step,
+        #                                                 #  finite_diff_jac_sparsity=constraint_finite_diff_jac_sparsity
+        #                                                  )
                 
-                constraints.append(fun)
+        #         constraints.append(fun)
                 
 
         inner_option = {}
@@ -173,9 +216,9 @@ class EuclideanIPTRM(Solver):
         inner_option["disp"] = option["disp"]
 
         self.callbackfun = option["callbackfun"]
-        self.ineqnum = ineqconstraints.num_constraint
-        self.eqnum = eqconstraints.num_constraint
-        self.maninum = maniconstraints.num_constraint
+        self.ineqnum = len(ineqconstraints)
+        self.eqnum = len(eqconstraints)
+        self.maninum = len(maniconstraints.constraints)
 
         def inner_callbackfun(xCur, status):
             eval = self.evaluation(problem, self.xPrev, xCur, status, self.callbackfun)

@@ -1,32 +1,39 @@
 import hydra, copy, time, pymanopt, wandb
 import numpy as np
 from dataclasses import dataclass, field
-from utils import build_Lagrangefun, evaluation, tangentorthobasis, hessianmatrix, hessianspectrum
+from utils import evaluation, tangentorthobasis, selfadj_operator2matrix, operatorspectrum, NonlinearProblem, Output
 from cvxopt import spmatrix, matrix, solvers
 
 import sys
 sys.path.append('./src/base')
-from base_solver import Solver, BaseOutput
+from base_solver import Solver # , BaseOutput
 
-@dataclass
-class Output(BaseOutput):
-    ineqLagmult: field(default_factory=list)
-    eqLagmult: field(default_factory=list)
+# @dataclass
+# class Output(BaseOutput):
+#     ineqLagmult: field(default_factory=list)
+#     eqLagmult: field(default_factory=list)
 
 
 # ell_1 penalty function for line search
 def ell_1penaltyfun(point, rho, costfun, ineqconstraints, eqconstraints):
     val = costfun(point)
     cstrvio = 0
-    if ineqconstraints.has_constraint:
-        for idx in range(ineqconstraints.num_constraint):
-            funval = (ineqconstraints.constraint[idx])(point)
-            cstrvio += max(0, funval)
-    if eqconstraints.has_constraint:
-        for idx in range(eqconstraints.num_constraint):
-            funval = (eqconstraints.constraint[idx])(point)
-            cstrvio += abs(funval)
-    val += rho * cstrvio
+    for idx in range(len(ineqconstraints)):
+        funval = (ineqconstraints[idx])(point)
+        cstrvio = cstrvio + max(0, funval)
+    for idx in range(len(eqconstraints)):
+        funval = (eqconstraints[idx])(point)
+        cstrvio = cstrvio + abs(funval)
+    val = val + rho * cstrvio
+    # if ineqconstraints.has_constraint:
+    #     for idx in range(ineqconstraints.num_constraint):
+    #         funval = (ineqconstraints.constraint[idx])(point)
+    #         cstrvio += max(0, funval)
+    # if eqconstraints.has_constraint:
+    #     for idx in range(eqconstraints.num_constraint):
+    #         funval = (eqconstraints.constraint[idx])(point)
+    #         cstrvio += abs(funval)
+    # val += rho * cstrvio
     return val
 
 class RSQO(Solver):
@@ -84,19 +91,44 @@ class RSQO(Solver):
     # @profile
     def run(self, problem):
         # Assertion
-        assert hasattr(problem, 'searchspace')
-        assert hasattr(problem, 'costfun')
-        assert hasattr(problem, 'eqconstraints')
-        assert hasattr(problem, 'ineqconstraints')
-        assert hasattr(problem, 'initialpoint')
-        assert hasattr(problem, 'initialineqLagmult')
-        assert hasattr(problem, 'initialeqLagmult')
+        # assert hasattr(problem, 'searchspace')
+        # assert hasattr(problem, 'costfun')
+        # assert hasattr(problem, 'eqconstraints')
+        # assert hasattr(problem, 'ineqconstraints')
+        # assert hasattr(problem, 'initialpoint')
+        # assert hasattr(problem, 'initialineqLagmult')
+        # assert hasattr(problem, 'initialeqLagmult')
+
+        # xCur = problem.initialpoint
+        # ineqLagCur = problem.initialineqLagmult
+        # eqLagCur = problem.initialeqLagmult
+
+        # # Set the optimization problem
+        # problem = NonlinearProblem(manifold=problem.searchspace,
+        #                             cost=problem.costfun,
+        #                             ineqconstraints=problem.ineqconstraints.constraint,
+        #                             eqconstraints=problem.eqconstraints.constraint)
+
 
         # Set the optimization problem
-        costfun = problem.costfun
-        ineqconstraints = problem.ineqconstraints
-        eqconstraints = problem.eqconstraints
-        manifold = problem.searchspace
+        costfun = problem.cost
+        ineqconstraints = problem.ineqconstraints_all
+        eqconstraints = problem.eqconstraints_all
+        # manifold = problem.searchspace
+        manifold = problem.manifold
+
+        has_ineqconstraints = problem.has_ineqconstraints
+        has_eqconstraints = problem.has_eqconstraints
+        num_ineqconstraints = problem.num_ineqconstraints
+        num_eqconstraints = problem.num_eqconstraints
+
+        gradcostfun = problem.riemannian_gradient
+        gradineqconstraints = problem.ineqconstraints_riemannian_gradient_all
+        gradeqconstraints = problem.eqconstraints_riemannian_gradient_all
+
+        hesscostfun = problem.riemannian_hessian
+        hessineqconstraints = problem.ineqconstraints_riemannian_hessian_all
+        hesseqconstraints = problem.eqconstraints_riemannian_hessian_all
 
         # Set initial points
         xCur = problem.initialpoint
@@ -123,13 +155,7 @@ class RSQO(Solver):
         manviofun = option["manviofun"]
         callbackfun = option["callbackfun"]
         eval_log = evaluation(problem, xPrev, xCur, ineqLagCur, eqLagCur, manviofun, callbackfun)
-        solver_log = self.solver_status(
-                            ineqLagCur,
-                            eqLagCur,
-                            ineqconstraints,
-                            eqconstraints,
-                            rho)
-
+        solver_log = self.solver_status(ineqLagCur, eqLagCur, rho)
         self.add_log(iteration, start_time, eval_log, solver_log)
 
         # Preparation for check stopping criteria
@@ -156,20 +182,32 @@ class RSQO(Solver):
             # Count an iteration
             iteration += 1
 
-            # Preparation for constructing the subproblem
-            costLag = build_Lagrangefun(ineqLagmult=ineqLagCur,
-                                        eqLagmult=eqLagCur,
-                                        costfun=costfun,
-                                        ineqconstraints=ineqconstraints,
-                                        eqconstraints=eqconstraints,
-                                        manifold=manifold)
-            Lagproblem = pymanopt.Problem(manifold, costLag)
+
+            
+            # costLag = build_Lagrangefun(ineqLagmult=ineqLagCur,
+            #                             eqLagmult=eqLagCur,
+            #                             costfun=costfun,
+            #                             ineqconstraints=ineqconstraints,
+            #                             eqconstraints=eqconstraints,
+            #                             manifold=manifold)
+            # Lagproblem = pymanopt.Problem(manifold, costLag)
 
             # Compute the Hessian matrix
             if option["quadoptim_type"] == 'reghess':
+                
+                # Preparation for constructing the subproblem
+                def hessLagfunCur(tangent_vector):
+                    vec = hesscostfun(xCur, tangent_vector)
+                    for i in range(len(hessineqconstraints)):
+                        vec = vec + ineqLagCur[i] * hessineqconstraints[i](xCur, tangent_vector)
+                    for j in range(len(hesseqconstraints)):
+                        vec = vec + eqLagCur[j]  * hesseqconstraints[j](xCur, tangent_vector)
+                    return vec
+                
                 orthobasis = quadoptim_basisfun(manifold, xCur, manifold.dim)
                 # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
-                Q, _ = hessianmatrix(Lagproblem, xCur, basis=orthobasis)
+                # Q, _ = hessianmatrix(Lagproblem, xCur, basis=orthobasis)
+                Q = selfadj_operator2matrix(manifold, xCur, hessLagfunCur, orthobasis)
                 eigenvalues, eigenvectors = np.linalg.eigh(Q)
                 for i in range(len(eigenvalues)):
                     if eigenvalues[i] < quadoptim_eigvalthld:
@@ -180,7 +218,15 @@ class RSQO(Solver):
                 Q = np.real(Q)
                 Q = matrix(Q)
             elif option["quadoptim_type"] == 'reghess_operator':
-                w, orthobasis = hessianspectrum(Lagproblem, xCur)
+                def hessLagfun(x, tangent_vector):
+                    vec = hesscostfun(x, tangent_vector)
+                    for i in range(len(hessineqconstraints)):
+                        vec = vec + ineqLagCur[i] * hessineqconstraints[i](x, tangent_vector)
+                    for j in range(len(hesseqconstraints)):
+                        vec = vec + eqLagCur[j]  * hesseqconstraints[j](x, tangent_vector)
+                    return vec
+                
+                w, orthobasis = operatorspectrum(manifold, hessLagfun, xCur)
                 w = np.where(w <= quadoptim_eigvalthld, quadoptim_eigvalcorr, w)
                 Q = spmatrix(w, range(len(w)), range(len(w)))
             elif option["quadoptim_type"] == 'eye':
@@ -192,7 +238,7 @@ class RSQO(Solver):
                 raise ValueError("quadoptim_type must be 'reghess', 'reghess_operator', or 'eye'.")
 
             # Compute the first-order term in the objective function
-            gradf = costfun.get_gradient_operator()
+            gradf = gradcostfun
             gradobjxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradf(xCur))
             p = np.empty(len(orthobasis))
             for i in range(len(orthobasis)):
@@ -202,13 +248,13 @@ class RSQO(Solver):
             # Compute the inequality constraints
             G = None
             h = None
-            if ineqconstraints.has_constraint:
-                G = np.empty((ineqconstraints.num_constraint, len(orthobasis)))
-                h = np.empty(ineqconstraints.num_constraint)
-                for i in range(ineqconstraints.num_constraint):
-                    ineqcstrfun = ineqconstraints.constraint[i]
+            if has_ineqconstraints:
+                G = np.empty((num_ineqconstraints, len(orthobasis)))
+                h = np.empty(num_ineqconstraints)
+                for i in range(num_ineqconstraints):
+                    ineqcstrfun = ineqconstraints[i]
                     h[i] = -ineqcstrfun(xCur)
-                    gradineqcstrfun = ineqcstrfun.get_gradient_operator()
+                    gradineqcstrfun = gradineqconstraints[i]
                     gradineqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradineqcstrfun(xCur))
                     for j in range(len(orthobasis)):
                         G[i,j] = manifold.inner_product(xCur, gradineqxCur, orthobasis[j])
@@ -218,14 +264,14 @@ class RSQO(Solver):
             # Compute the equality constraints
             A = None
             b = None
-            if eqconstraints.has_constraint:
-                A = np.empty((eqconstraints.num_constraint, len(orthobasis)))
-                b = np.empty(eqconstraints.num_constraint)
+            if has_eqconstraints:
+                A = np.empty((num_eqconstraints, len(orthobasis)))
+                b = np.empty(num_eqconstraints)
 
-                for i in range(eqconstraints.num_constraint):
-                    eqcstrfun = eqconstraints.constraint[i]
+                for i in range(num_eqconstraints):
+                    eqcstrfun = eqconstraints[i]
                     b[i] = -eqcstrfun(xCur)
-                    gradeqcstrfun = eqcstrfun.get_gradient_operator()
+                    gradeqcstrfun = gradeqconstraints[i]
                     gradeqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradeqcstrfun(xCur))
                     for j in range(len(orthobasis)):
                         A[i,j] = manifold.inner_product(xCur, gradeqxCur, orthobasis[j])
@@ -239,7 +285,6 @@ class RSQO(Solver):
             solvers.options['reltol'] =  quadoptim_reltol
             solvers.options['feastol'] =  quadoptim_feastol
 
-
             # Solve the subproblem
             sol = solvers.qp(P=Q, q=p, G=G, h=h, A=A, b=b)
             coeff = np.array(sol['x']).T[0]
@@ -247,8 +292,8 @@ class RSQO(Solver):
             eqLagsol = np.array(sol['y']).T[0]
             # Assertion for the shapes of solution
             assert coeff.shape == (len(orthobasis),)
-            assert ineqLagsol.shape == (ineqconstraints.num_constraint,)
-            assert eqLagsol.shape == (eqconstraints.num_constraint,)
+            assert ineqLagsol.shape == (num_ineqconstraints,)
+            assert eqLagsol.shape == (num_eqconstraints,)
 
             # Compute the df0 (the inner product of B_k[d] and d) and dir (the search direction)
             # for line search
@@ -260,9 +305,9 @@ class RSQO(Solver):
 
             # Update rho if necessary
             upsilon = 0
-            if ineqconstraints.has_constraint:
+            if has_ineqconstraints:
                 upsilon = max([upsilon, max(ineqLagsol)])
-            if eqconstraints.has_constraint:
+            if has_eqconstraints:
                 upsilon = max([upsilon, max(abs(eqLagsol))])
             if rho < upsilon:
                 rho = upsilon + tau
@@ -295,8 +340,6 @@ class RSQO(Solver):
             solver_log = self.solver_status(
                       ineqLagCur,
                       eqLagCur,
-                      ineqconstraints,
-                      eqconstraints,
                       rho,
                       upsilon=upsilon,
                       sol=sol,
@@ -328,8 +371,6 @@ class RSQO(Solver):
     def solver_status(self,
                       ineqLagmult,
                       eqLagmult,
-                      ineqconstraints,
-                      eqconstraints,
                       rho,
                       upsilon=None,
                       sol=None,
@@ -342,12 +383,10 @@ class RSQO(Solver):
         solver_status["upsilon"] = upsilon
 
         maxabsLagmult = float('-inf')
-        if ineqconstraints.has_constraint:
-            for Lagmult in ineqLagmult:
-                maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
-        if eqconstraints.has_constraint:
-            for Lagmult in eqLagmult:
-                maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
+        for Lagmult in ineqLagmult:
+            maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
+        for Lagmult in eqLagmult:
+            maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
         solver_status["maxabsLagmult"] = maxabsLagmult
 
         if sol is not None:
@@ -379,11 +418,11 @@ class RSQO(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../Model_Ob", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/Model_Ob')
+    sys.path.append('./src/PackingCircles')
     import coordinator
 
     # Call a problem coordinator

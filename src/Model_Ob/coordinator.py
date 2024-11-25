@@ -8,44 +8,66 @@ import sys
 sys.path.append('./src/base')
 import problem_coordinator
 
-@dataclass
-class Constraints:
-    has_constraint: bool = False  # whether having a type of constraints or not
-    num_constraint: int = 0  # the number of constraints. must be compatible with the length of 'constraint' list
-    constraint: list = field(default_factory=list)
+sys.path.append('./src/solver')
+import utils
 
-@dataclass
-class Problem(problem_coordinator.BaseProblem):
-    initialineqLagmult: field(default_factory=list)
-    initialeqLagmult: field(default_factory=list)
-    searchspace: Any
-    eqconstraints: Constraints
-    ineqconstraints: Constraints
+
+# @dataclass
+# class Constraints:
+#     has_constraint: bool = False  # whether having a type of constraints or not
+#     num_constraint: int = 0  # the number of constraints. must be compatible with the length of 'constraint' list
+#     constraint: list = field(default_factory=list)
+
+# @dataclass
+# class Problem(problem_coordinator.BaseProblem):
+#     initialineqLagmult: field(default_factory=list)
+#     initialeqLagmult: field(default_factory=list)
+#     searchspace: Any
+#     eqconstraints: Constraints
+#     ineqconstraints: Constraints
 
 
 # Problem coordinator for nonnegative principal component analysis
 class Coordinator(problem_coordinator.Coordinator):
 
     def run(self):
-        searchspace = self.set_searchspace()
+        manifold = self.set_manifold()
         costfun = self.set_costfun()
         ineqconstraints = self.set_ineqconstraints()
         eqconstraints = self.set_eqconstraints()
         initialpoint = self.set_initialpoint()
         initialineqLagmult = self.set_initialineqLagmult()
         initialeqLagmult = self.set_initialeqLagmult()
-        problem = Problem(searchspace=searchspace,
-                          costfun=costfun,
-                          ineqconstraints=ineqconstraints,
-                          eqconstraints=eqconstraints,
-                          initialpoint=initialpoint,
-                          initialineqLagmult=initialineqLagmult,
-                          initialeqLagmult=initialeqLagmult
-                          )
+        # maniconstraints = self.set_maniconstraints()
+        problem = utils.NonlinearProblem(
+            manifold=manifold,
+            cost=costfun,
+            ineqconstraints=ineqconstraints,
+            eqconstraints=eqconstraints,
+            initialpoint=initialpoint,
+            initialineqLagmult=initialineqLagmult,
+            initialeqLagmult=initialeqLagmult,
+        )
+        
+        # searchspace = self.set_searchspace()
+        # costfun = self.set_costfun()
+        # ineqconstraints = self.set_ineqconstraints()
+        # eqconstraints = self.set_eqconstraints()
+        # initialpoint = self.set_initialpoint()
+        # initialineqLagmult = self.set_initialineqLagmult()
+        # initialeqLagmult = self.set_initialeqLagmult()
+        # problem = Problem(searchspace=searchspace,
+        #                   costfun=costfun,
+        #                   ineqconstraints=ineqconstraints,
+        #                   eqconstraints=eqconstraints,
+        #                   initialpoint=initialpoint,
+        #                   initialineqLagmult=initialineqLagmult,
+        #                   initialeqLagmult=initialeqLagmult
+        #                   )
         return problem
 
     # Set sphere manifold as a search space
-    def set_searchspace(self):
+    def set_manifold(self):
         dataset_path = self.dataset_path
         path = f'{dataset_path}/rdim.csv'
         rdim = int(np.loadtxt(path))
@@ -91,10 +113,11 @@ class Coordinator(problem_coordinator.Coordinator):
                 nonnegfun = build_nonnegfun(row, col)
                 constraint.append(nonnegfun)
 
-        ineqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
-                                      num_constraint = rdim * cdim,
-                                      constraint = constraint)
-        return ineqconstraints
+        # ineqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
+        #                               num_constraint = rdim * cdim,
+        #                               constraint = constraint)
+        # return ineqconstraints
+        return constraint
     
     # Set nonnegativity of each element as an inequality function
     def set_eqconstraints(self):
@@ -112,10 +135,11 @@ class Coordinator(problem_coordinator.Coordinator):
 
         constraint = [eqfun]
 
-        eqconstraints = Constraints(has_constraint = True,
-                                      num_constraint = 1,
-                                      constraint = constraint)
-        return eqconstraints
+        # eqconstraints = Constraints(has_constraint = True,
+        #                               num_constraint = 1,
+        #                               constraint = constraint)
+        # return eqconstraints
+        return constraint
     
     # Set initial points with initial Lagrange multipliers
     def set_initialpoint(self):

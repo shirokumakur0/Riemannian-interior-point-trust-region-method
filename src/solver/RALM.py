@@ -2,18 +2,26 @@ import hydra, copy, time, pymanopt, wandb
 import numpy as np
 from dataclasses import dataclass, field
 
-from utils import build_Lagrangefun, evaluation
-
+from utils import evaluation, NonlinearProblem, Output
+from typing import Any
 
 import sys
 sys.path.append('./src/base')
 from base_solver import Solver, BaseOutput
 
 @dataclass
-class Output(BaseOutput):
-    ineqLagmult: field(default_factory=list)
-    eqLagmult: field(default_factory=list)
+class SubProblem:
+    manifold: Any
+    cost: Any
+    riemannian_gradient: Any
+    preconditioner: Any
 
+# @dataclass
+# class Output(BaseOutput):
+#     ineqLagmult: field(default_factory=list)
+#     eqLagmult: field(default_factory=list)
+
+"""
 # Riemannian Augmented Lagrange function
 def build_almfun(ineqLagmult, eqLagmult, rho, costfun, ineqconstraints, eqconstraints, manifold):
     @pymanopt.function.autograd(manifold)
@@ -29,10 +37,11 @@ def build_almfun(ineqLagmult, eqLagmult, rho, costfun, ineqconstraints, eqconstr
                 funval = (eqconstraints.constraint[idx])(point)
                 violation = violation + (funval + (eqLagmult[idx]/rho)) ** 2
 
-        violation *= rho * 0.5
-        val += violation
+        violation = violation * rho * 0.5
+        val = val + violation
         return val
     return almfun
+"""
 
 class RALM(Solver):
     def __init__(self, option):
@@ -52,7 +61,7 @@ class RALM(Solver):
             'LagmultUnbdUpdate': False,  # True if RALM aims to find AKKT points else False.
 
             # Inner loop setting
-            'innersubsolver': "TrustRegions",
+            'innersubsolver': "SteepestDescent",
             'maxInnerIter': 200,
             'startingtolgradnorm': 1e-3,
             'endingtolgradnorm': 1e-6,
@@ -84,20 +93,49 @@ class RALM(Solver):
     # Running an experiment
     def run(self, problem):
         # Assertion
-        assert hasattr(problem, 'searchspace')
-        assert hasattr(problem, 'costfun')
-        assert hasattr(problem, 'eqconstraints')
-        assert hasattr(problem, 'ineqconstraints')
-        assert hasattr(problem, 'initialpoint')
-        assert hasattr(problem, 'initialineqLagmult')
-        assert hasattr(problem, 'initialeqLagmult')
+        # assert hasattr(problem, 'searchspace')
+        # assert hasattr(problem, 'costfun')
+        # assert hasattr(problem, 'eqconstraints')
+        # assert hasattr(problem, 'ineqconstraints')
+        # assert hasattr(problem, 'initialpoint')
+        # assert hasattr(problem, 'initialineqLagmult')
+        # assert hasattr(problem, 'initialeqLagmult')
+
+        # xCur = problem.initialpoint
+        # ineqLagCur = problem.initialineqLagmult
+        # eqLagCur = problem.initialeqLagmult
 
         # Set the optimization problem
+        # problem = NonlinearProblem(manifold=problem.searchspace,
+        #                             cost=problem.costfun,
+        #                             ineqconstraints=problem.ineqconstraints.constraint,
+        #                             eqconstraints=problem.eqconstraints.constraint)
+
+        costfun = problem.cost
+        ineqconstraints = problem.ineqconstraints_all
+        eqconstraints = problem.eqconstraints_all
+        manifold = problem.manifold
+        
+        has_ineqconstraints = problem.has_ineqconstraints
+        has_eqconstraints = problem.has_eqconstraints
+        num_ineqconstraints = problem.num_ineqconstraints
+        num_eqconstraints = problem.num_eqconstraints
+        
+        gradcostfun = problem.riemannian_gradient
+        gradineqconstraints = problem.ineqconstraints_riemannian_gradient_all
+        gradeqconstraints = problem.eqconstraints_riemannian_gradient_all
+        
+        # hesscostfun = problem.riemannian_hessian
+        # hessineqconstraints = problem.ineqconstraints_riemannian_hessian_all
+        # hesseqconstraints = problem.eqconstraints_riemannian_hessian_all
+        
+        """
         costfun = problem.costfun
         ineqconstraints = problem.ineqconstraints
         eqconstraints = problem.eqconstraints
         manifold = problem.searchspace
-
+        """
+        
         # Set initial points
         xCur = problem.initialpoint
         ineqLagCur = problem.initialineqLagmult
@@ -137,7 +175,7 @@ class RALM(Solver):
         manviofun = option["manviofun"]
         callbackfun = option["callbackfun"]
         eval_log = evaluation(problem, xPrev, xCur, ineqLagCur, eqLagCur, manviofun, callbackfun)
-        solver_log = self.solver_status(rho, ineqLagCur, eqLagCur, ineqconstraints, eqconstraints)
+        solver_log = self.solver_status(rho, ineqLagCur, eqLagCur)
         self.add_log(OuterIteration, start_time, eval_log, solver_log)
 
         # Preparation for check stopping criteria
@@ -159,18 +197,45 @@ class RALM(Solver):
                 break
             # Count an iteration
             OuterIteration += 1
-
-            # Set augmented Lagrangian
-            almfun = build_almfun(ineqLagmult=ineqLagCur,
-                                    eqLagmult=eqLagCur,
-                                    rho=rho,
-                                    costfun=costfun,
-                                    ineqconstraints=ineqconstraints,
-                                    eqconstraints=eqconstraints,
-                                    manifold=manifold)
+            
+            # @pymanopt.function.autograd(manifold)
+            def costalmfun(point):
+                val = costfun(point)
+                violation = 0
+                for i in range(len(ineqconstraints)):
+                    violation = violation + max(0, (ineqLagCur[i]/rho) + ineqconstraints[i](point))**2
+                for j in range(len(eqconstraints)):
+                    violation = violation + ((eqLagCur[j]/rho) + eqconstraints[j](point))**2
+                violation = violation * rho * 0.5
+                val = val + violation
+                return val
+            
+            # @pymanopt.function.autograd(manifold)
+            def gradalmfun(point):
+                vec = gradcostfun(point)
+                for i in range(len(gradineqconstraints)):
+                    if (ineqconstraints[i](point) + ineqLagCur[i]/rho) > 0:
+                        vec = vec + (ineqLagCur[i] + rho * ineqconstraints[i](point)) * gradineqconstraints[i](point)
+                for j in range(len(gradeqconstraints)):
+                    vec = vec + (eqLagCur[j] + rho * eqconstraints[j](point)) * gradeqconstraints[j](point)
+                return vec
+            
+            """
+            Note: The functions costalmfun and gradalmfun are defined without using @pymanopt.function.autograd() 
+            to ensure compatibility with cases where the manifold is a product manifold.
+            This approach prevents the direct use of pymanopt.Problem() to construct the subproblem, 
+            as pymanopt.Problem() requires both cost and riemannian_gradient to be wrapped with @pymanopt.function.autograd().
+            To address this limitation, we symptomatically introduce a custom class, SubProblem, which can handle functions of any type.
+            """
+            subproblem = SubProblem(
+                manifold=manifold,
+                cost=costalmfun,
+                riemannian_gradient=gradalmfun,
+                preconditioner=None
+                )
 
             # Construct the subproblem and the subsolver
-            subproblem = pymanopt.Problem(manifold, almfun)
+            # subproblem = pymanopt.Problem(manifold=manifold, cost=costalmfun, riemannian_gradient=gradalmfun)
             class_subsolver = getattr(pymanopt.optimizers, innersubsolver)
             subsolver = class_subsolver(max_iterations=maxInnerIter,
                                         min_step_size=innerminstepsize,
@@ -185,28 +250,28 @@ class RALM(Solver):
             # Construct ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points.
             # The update is based on the paper by Yamakawa and Sato.
             if LagmultUnbdUpdate:
-                if ineqconstraints.has_constraint:
-                    for idx in range(ineqconstraints.num_constraint):
-                        ineqcstrfun = ineqconstraints.constraint[idx]
+                if has_ineqconstraints:
+                    for idx in range(num_ineqconstraints):
+                        ineqcstrfun = ineqconstraints[idx]
                         ineqcost = ineqcstrfun(xCur)
                         ineqLagCurUnbd[idx] = max(0, ineqLagCur[idx] + rho * ineqcost)
-                if eqconstraints.has_constraint:
-                    for idx in range(eqconstraints.num_constraint):
-                        eqcstrfun = eqconstraints.constraint[idx]
+                if has_eqconstraints:
+                    for idx in range(num_eqconstraints):
+                        eqcstrfun = eqconstraints[idx]
                         eqcost = eqcstrfun(xCur)
                         eqLagCurUnbd[idx] = eqLagCur[idx] + rho * eqcost
 
             # Update Lagrange multipliers
             newacc = 0
-            if ineqconstraints.has_constraint:
-                for idx in range(ineqconstraints.num_constraint):
-                    ineqcstrfun = ineqconstraints.constraint[idx]
+            if has_ineqconstraints:
+                for idx in range(num_ineqconstraints):
+                    ineqcstrfun = ineqconstraints[idx]
                     ineqcost = ineqcstrfun(xCur)
                     newacc = max(newacc, abs(max(-ineqLagCur[idx]/rho, ineqcost)))
                     ineqLagCur[idx] = min(bound, max(0, ineqLagCur[idx] + rho * ineqcost))
-            if eqconstraints.has_constraint:
-                for idx in range(eqconstraints.num_constraint):
-                    eqcstrfun = eqconstraints.constraint[idx]
+            if has_eqconstraints:
+                for idx in range(num_eqconstraints):
+                    eqcstrfun = eqconstraints[idx]
                     eqcost = eqcstrfun(xCur)
                     newacc = max(newacc, abs(eqcost))
                     eqLagCur[idx] = min(bound, max(-bound, eqLagCur[idx] + rho * eqcost))
@@ -224,16 +289,16 @@ class RALM(Solver):
             # Evaluation and logging
             # Set ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points (the update is based on the paper by Yamakawa and Sato.)
             # Otherwise, use ineqLagCur and eqLagCur for the evaluation based on the paper by Liu and Boumal.
-            if ineqconstraints.has_constraint and LagmultUnbdUpdate:
+            if has_ineqconstraints and LagmultUnbdUpdate:
                 ineqLagEval = ineqLagCurUnbd
             else:
                 ineqLagEval = ineqLagCur
-            if eqconstraints.has_constraint and LagmultUnbdUpdate:
+            if has_eqconstraints and LagmultUnbdUpdate:
                 eqLagEval = eqLagCurUnbd
             else:
                 eqLagEval = eqLagCur
             eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
-            solver_log = self.solver_status(rho, ineqLagEval, eqLagEval, ineqconstraints, eqconstraints)
+            solver_log = self.solver_status(rho, ineqLagEval, eqLagEval)
             self.add_log(OuterIteration, start_time, eval_log, solver_log)
 
             # Update previous x and residual
@@ -255,26 +320,26 @@ class RALM(Solver):
         return output
 
     # Examine the max value of Lagrange multipliers
-    def solver_status(self, rho, ineqLagmult, eqLagmult, ineqconstraints, eqconstraints):
+    def solver_status(self, rho, ineqLagmult, eqLagmult):
         solver_status = {}
         solver_status["rho"] = rho
         maxabsLagmult = float('-inf')
 
-        if ineqconstraints.has_constraint:
-            for Lagmult in ineqLagmult:
-                maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
-        if eqconstraints.has_constraint:
-            for Lagmult in eqLagmult:
-                maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
+        # if ineqconstraints.has_constraint:
+        for Lagmult in ineqLagmult:
+            maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
+        # if eqconstraints.has_constraint:
+        for Lagmult in eqLagmult:
+            maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
 
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../Model_Ob", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/PackingCircles')
+    sys.path.append('./src/Model_Ob')
     import coordinator
 
     # Call a problem coordinator

@@ -1,7 +1,7 @@
 import hydra, copy, time, pymanopt, wandb, warnings
 import numpy as np
 from dataclasses import dataclass, field
-from utils import  tangentorthobasis, operator2matrix, evaluation, TangentSpaceConjResMethod, selfadj_operator2matrix
+from utils import  tangentorthobasis, evaluation, tgtvecshapefun, vectorizefun, selfadj_operator2matrix, Output
 import warnings
 import scipy
 
@@ -14,7 +14,7 @@ Print = PETSc.Sys.Print
 
 import sys
 sys.path.append('./src/base')
-from base_solver import Solver, BaseOutput
+from base_solver import Solver
 
 # import warnings
 # import traceback
@@ -29,16 +29,6 @@ from base_solver import Solver, BaseOutput
 
 warnings.filterwarnings("ignore", message="Output seems independent of input.")
 
-
-@dataclass
-class Output(BaseOutput):
-    ineqLagmult: field(default_factory=list)
-    eqLagmult: field(default_factory=list)
-
-# from scipy.sparse.linalg import cg, LinearOperator, eigs #, eigsh
-
-
-
 def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
     """
     Solves the trust-region subproblem by a generalized eigenproblem without iterations.
@@ -51,10 +41,13 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
         a (ndarray): nx1 vector.
         B (ndarray): Symmetric positive definite nxn matrix.
         Del (float): Radius constraint.
+        tolhardcase (float): Tolerance for the hard case.
+        exit_warning_triggered (bool): Whether to exit when a warning is triggered.
 
     Returns:
         x (ndarray): Solution vector.
         lam1 (float): Lagrange multiplier.
+        info (str): Information about the solution.
     """
     n = A.shape[0]
 
@@ -162,40 +155,25 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
     if not np.isnan(p1).any():
         p1objval = 0.5 * (p1 @ A @ p1)  + a @ p1
         xobjval = 0.5 * (x @ A @ x)  + a @ x
-        if p1objval < xobjval:
+        if p1objval <= xobjval:
             x = p1
             lam1 = 0
             type = "interior"
     return x, lam1, type
 
-def MM0fun(x, y, tgtfun, reshapefun, vecfun, n, Afun, Bfun, g, Delta, manifold):
-    x1 = tgtfun(reshapefun(x[:n]))
-    x2 = tgtfun(reshapefun(x[n:]))
-    y1 = -Bfun(x1) + Afun(x2)
-    y2 = Afun(x1) - g * manifold.inner_product(x, g, x2) / Delta**2
-    y1 = vecfun(tgtfun(y1))
-    y2 = vecfun(tgtfun(y2))
-    y[:] = np.concatenate([y1, y2])
-
-def MM1fun(x, y, tgtfun, reshapefun, vecfun, n, Bfun):
-    x1 = tgtfun(reshapefun(x[:n]))
-    x2 = tgtfun(reshapefun(x[n:]))
-    y1 = -Bfun(x2)
-    y2 = -Bfun(x1)
-    y1 = vecfun(tgtfun(y1))
-    y2 = vecfun(tgtfun(y2))
-    y[:] = np.concatenate([y1, y2])
+def basefun(x, y, A, tgtfun, reshapefun, vecfun):
+    y[:] = vecfun(tgtfun(A(tgtfun(reshapefun(x)))))
 
 class PETSc_operator(object):
     def __init__(self, fun):
         self.fun = fun
-        
+
     def mult(self, mat, xx, yy):
         x = xx.getArray(readonly=1).reshape(-1)
         y = yy.getArray(readonly=0).reshape(-1)
         self.fun(x, y)
-        
-def PETSc_solve(n, eignum, Afun, Bfun=None, eigval_type="LARGEST_REAL"):
+
+def PETSc_solve(n, eignum, Afun, Bfun=None, tol=1e-12, maxiter=1000, eigval_type="LARGEST_REAL"):
     Acontext = PETSc_operator(Afun)
     Bcontext = PETSc_operator(Bfun)
     
@@ -209,177 +187,26 @@ def PETSc_solve(n, eignum, Afun, Bfun=None, eigval_type="LARGEST_REAL"):
     xi, _ = PETSc_A.getVecs()
     
     E = SLEPc.EPS().create()
+    E.setTolerances(tol, maxiter)
     if Bfun is not None:
-        E.setOperators(PETSc_A, PETSc_B)  # 一般化固有値問題のために A, B を指定
+        E.setOperators(PETSc_A, PETSc_B)  # Set operators A and B for the generalized eigenproblem
     else:
         E.setOperators(PETSc_A)
-    E.setDimensions(eignum, PETSc.DECIDE)  # 求める固有値の数を指定
-    E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)  # 非エルミート一般化固有値問題
+    E.setDimensions(eignum, PETSc.DECIDE)  # Number of eigenvalues to compute
+    E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)  # Generalized non-Hermitian eigenvalue problem
     if eigval_type == "LARGEST_REAL":
         E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
     elif eigval_type == "SMALLEST_REAL":
         E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
     else:
         raise ValueError("eigval_type must be 'LARGEST_REAL' or 'SMALLEST_REAL'")
-    st = E.getST()  # スペクトラル変換の設定
-    ksp = st.getKSP()  # Krylov部分空間ソルバーの設定（LU分解を回避）
-    ksp.setType("gmres")  # GMRES法を指定
+    st = E.getST()  # Spectral transformation
+    ksp = st.getKSP()  # Krylov subspace solver (avoid LU decomposition)
+    ksp.setType("gmres")  # GMRES solver
     pc = ksp.getPC()
-    pc.setType("none")  # 前処理なし
+    pc.setType("none")  # No preconditioner
     E.solve()
     return E, xr, xi
-
-def basefun(x, y, A, tgtfun, reshapefun, vecfun):
-    y[:] = vecfun(tgtfun(A(tgtfun(reshapefun(x)))))
-
-def TRSgep_matrixfree(A, a, B, Del, x, manifold, tolhardcase=1e-4, exit_warning_triggered=False):
-    """
-    Solves the trust-region subproblem by a generalized eigenproblem without iterations.
-
-    minimize (x^T A x) / 2 + a^T x
-    subject to x^T B x <= Del^2
-
-    Parameters:
-        A (LinearOperator): Symmetric operator.
-        a (tangent vector): dimx1 vector.
-        B (LinearOperator): Symmetric positive definite operator.
-        Del (float): Radius constraint.
-
-    Returns:
-        x (ndarray): Solution vector.
-        lam1 (float): Lagrange multiplier.
-    """
-
-    # Construct the block matrix MM1
-    tgtvec_shape = manifold.zero_vector(x).shape
-    n = len(manifold.zero_vector(x).reshape(-1))
-    dim = manifold.dim
-
-    tgtfun = lambda v: manifold.to_tangent_space(x, v)
-    reshapefun = lambda v: v.reshape(tgtvec_shape)
-    vecfun = lambda v: v.reshape(-1)
-
-    # Possible interior solution
-    Aoperator = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(A(tgtfun(reshapefun(dir))))))
-    avec = vecfun(tgtfun(a))
-    
-    if exit_warning_triggered:
-        with warnings.catch_warnings(record=True) as caught_warnings:
-            warnings.simplefilter("always", scipy.linalg.LinAlgWarning)
-            p1, _ = scipy.sparse.linalg.lgmres(Aoperator, -avec, rtol=tolhardcase)
-            for warning in caught_warnings:
-                if issubclass(warning.category, scipy.linalg.LinAlgWarning):
-                    # print(warning.message)
-                    return None, None, "solve failed"
-    else:
-        p1, _ = scipy.sparse.linalg.lgmres(Aoperator, -avec, rtol=tolhardcase)
-    
-    if manifold.norm(x, A(p1) + a) / manifold.norm(x, a) < 1e-5:
-        if manifold.inner_product(x, p1, B(p1)) >= Del**2:  # outside of the trust region
-            p1 = np.full_like(p1, np.nan)  # ineligible
-    else:  # numerically incorrect
-        p1 = np.full_like(p1, np.nan)
-
-    lambdaMM0 = lambda x, y: MM0fun(x, y, tgtfun, reshapefun, vecfun, n, A, B, a, Del, manifold)
-    lambdaMM1 = lambda x, y: MM1fun(x, y, tgtfun, reshapefun, vecfun, n, B)
-
-    E, xr, xi = PETSc_solve(2*n, 2*(n-dim)+1, lambdaMM0, lambdaMM1, eigval_type="LARGEST_REAL")
-    kvec = [None] * (2*(n-dim)+1)
-    for i in range(2*(n-dim)+1):
-        k = E.getEigenpair(i, xr, xi)
-        k = k.real
-        kvec[i] = k
-    index = np.argmax(np.abs(kvec))
-    k = E.getEigenpair(index, xr, xi)
-    lam1 = copy.deepcopy(k)  # scalar なのでcopy不要ではある
-    V = np.real(xr.getArray())
-    v = V[:n]  # extract solution component
-    tgtv = np.real(tgtfun(reshapefun(v)))
-    normv = np.sqrt(manifold.inner_product(x,  B(tgtv), tgtv))
-    tgtv = tgtv / normv * Del  # in the easy case, this naive normalization improves accuracy
-    if manifold.inner_product(x, tgtv, a) > 0:
-        tgtv = -tgtv  # take correct sign
-    type = "boundary"
-    
-    if normv < tolhardcase:  # enter hard case
-        print("enter hard case, consinder debug chance! rare case!")
-        x1 = np.real(tgtfun(reshapefun(V[n:])))
-        Pvect = x1  # first try only k=1, almost always enough
-        alpha1 = copy.deepcopy(lam1)
-        Alam1B = lambda vec: vecfun(tgtfun(A(tgtfun(reshapefun(vec))))) + lam1 * vecfun(tgtfun(B(tgtfun(reshapefun(vec)))))
-        BPvecti = B(Pvect)
-        alpha1Bpvecti2= lambda vec: alpha1 * manifold.inner_product(x, BPvecti, tgtfun(reshapefun(vec))) * BPvecti
-        H = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda vec: Alam1B(vec) + alpha1Bpvecti2(vec))
-        if exit_warning_triggered:
-                with warnings.catch_warnings(record=True) as caught_warnings:
-                    warnings.simplefilter("always", scipy.linalg.LinAlgWarning)
-                    x2, _ = scipy.sparse.linalg.lgmres(H, -avec, rtol=tolhardcase)
-                    for warning in caught_warnings:
-                        if issubclass(warning.category, scipy.linalg.LinAlgWarning):
-                            # print(warning.message)
-                            return None, None, "solve failed"
-        else:
-            x2, _ = scipy.sparse.linalg.lgmres(H, -avec, rtol=tolhardcase)
-        x2 = np.real(tgtfun(reshapefun(x2)))
-        type = "hardcase_1"
-
-        # Residual check for hard case refinement
-        """printデバッグしまくったほうが良い"""
-        if manifold.norm(x, Alam1B(x2) + a) / manifold.norm(x, a) > tolhardcase:
-            print("hardcase")
-            maxii = min(dim, 9)
-            lambdaA = lambda x, y: basefun(x, y, A, tgtfun, reshapefun, vecfun)
-            lambdaB = lambda x, y: basefun(x, y, B, tgtfun, reshapefun, vecfun)
-            E, xr, xi = PETSc_solve(n, (n-dim)+maxii, lambdaA, lambdaB, eigval_type="SMALLEST_REAL")
-            kvec = [None] * ((n-dim)+maxii)
-            xrarrayvec = [None] * ((n-dim)+maxii)
-            for i in range((n-dim)+maxii):
-                k = E.getEigenpair(i, xr, xi)
-                k = k.real
-                kvec[i] = k
-                xrarrayvec[i] = copy.deepcopy(np.real(xr.getArray()))
-            indices = np.argsort(-np.abs(kvec))[:maxii]
-            indices = indices[np.argsort(np.array(kvec)[indices])]
-            Pvects = [xrarrayvec[i] for i in indices]
-            for ii in [3, 6, 9]:
-                if maxii < ii:
-                    break
-                type = f"hardcase_{ii}"
-                Pvectii = Pvects[:ii]
-                BPvects = [B(tgtfun(reshapefun(Pvect))) for Pvect in Pvectii]
-                alpha1Bpvecti2= lambda vec: alpha1 * np.sum([manifold.inner_product(x, BPvect, tgtfun(reshapefun(vec))) * BPvect for BPvect in BPvects], axis=0)
-                H = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda vec: Alam1B(vec) + alpha1Bpvecti2(vec))
-                
-                if exit_warning_triggered:
-                    with warnings.catch_warnings(record=True) as caught_warnings:
-                        warnings.simplefilter("always", scipy.linalg.LinAlgWarning)
-                        x2, _ = scipy.sparse.linalg.lgmres(H, -avec, rtol=tolhardcase)
-                        for warning in caught_warnings:
-                            if issubclass(warning.category, scipy.linalg.LinAlgWarning):
-                                # print(warning.message)
-                                return None, None, "solve failed"
-                else:
-                    x2, _ = scipy.sparse.linalg.lgmres(H, -avec, rtol=tolhardcase)
-                x2 = np.real(tgtfun(reshapefun(x2)))
-                if manifold.norm(x, Alam1B(x2) + a) / manifold.norm(x, a) < tolhardcase:
-                    break
-        Bx = B(x1)
-        Bx2 = B(x2)
-        aa = manifold.inner_product(x, x1, Bx)
-        bb = 2 * manifold.inner_product(x, x2, Bx)
-        cc = manifold.inner_product(x, x2, Bx2) - Del**2
-        alp = (-bb + np.sqrt(bb**2 - 4 * aa * cc)) / (2 * aa)  #norm(x2+alp*x)-Delta
-        tgtv = x2 + alp * x1
-
-    # Choose between interior and boundary solution
-    if not np.isnan(p1).any():
-        p1objval = manifold.inner_product(x, 0.5 * A(p1) + a, p1)
-        tgtvobjval = manifold.inner_product(x, 0.5 * A(tgtv) + a, tgtv)
-        if p1objval < tgtvobjval:
-            tgtv = p1
-            lam1 = 0
-            type = "interior"
-    return tgtv, lam1, type
 
 # Riemannian interior point trust region method
 class RIPTRM(Solver):
@@ -394,22 +221,23 @@ class RIPTRM(Solver):
             'inner_maxtime': None,
 
             # Inner iteration setting
-            'initial_TR_radius': 1,
+            'initial_TR_radius': None,
             'maximal_TR_radius': 10,
             'rho': 0.2,  # threshold for the acceptance of the trial point
-            'gamma': 0.5,  # the factor to shrink the trust region radius if the primal point is infeasible
+            'gamma': 0.25,  # the factor to shrink the trust region radius if the primal point is infeasible
             'forcing_function_Lagrangian': lambda mu: mu,
             'forcing_function_complementarity': lambda mu: mu,
-            'forcing_function_second_order': lambda mu: mu,
+            'forcing_function_second_order': lambda mu: 100 * mu,
             'min_barrier_parameter': 1e-15,
-            'TRS_solver': 'Cauchy',  # 'Exact_RepMat', 'Exact_Operator', or 'Cauchy'
-            'second_order_stationarity': False,
+            'TRS_solver': 'Exact_RepMat',  # 'Exact_RepMat', 'Exact_Operator', or 'Cauchy'
+            'second_order_stationarity': True,
+            'TRS_tolresid': 1e-12,
             'TRS_tolhardcase': 1e-8,
             'exit_warning_triggered': False,
             'checkTRSoptimality': False,
             'initial_barrier_parameter': 0.1,
-            'barrier_parameter_update_r': 0.8,
-            'barrier_parameter_update_c': 0.8,
+            'barrier_parameter_update_r': 0.4, # 0.8,
+            'barrier_parameter_update_c': 0.4, #0.8,
             'const_left': 1e-16, # 0.5,
             'const_right': 1e+20,
             'basisfun': lambda manifold, x: tangentorthobasis(manifold, x, manifold.dim),
@@ -455,6 +283,7 @@ class RIPTRM(Solver):
         inner_option["checkTRSoptimality"] = option['checkTRSoptimality']
         inner_option["exit_warning_triggered"] = option['exit_warning_triggered']
         inner_option["TRS_tolhardcase"] = option['TRS_tolhardcase']
+        inner_option["TRS_tolresid"] = option['TRS_tolresid']
         inner_option["checkTRSoptimality"] = option['checkTRSoptimality']
         inner_option["exit_warning_triggered"] = option['exit_warning_triggered']
         inner_option["TRS_tolhardcase"] = option['TRS_tolhardcase']
@@ -470,22 +299,194 @@ class RIPTRM(Solver):
             inner_option["stopping_criterion_second_order"] = None
         return inner_option
 
-    def set_initial_inner_info(self, inner_iteration, TR_radius):
-        inner_info = {}
-        inner_info["inner_status"] = None
-        inner_info["num_inner"] = inner_iteration
-        inner_info["TR_radius"] = TR_radius
-        inner_info["normdx"] = None
-        inner_info["dxtype"] = None
-        inner_info["min_primal_feasibility"] = None
-        inner_info["min_dual_feasibility"] = None
-        inner_info["complementarity"] = None
-        inner_info["mineigval_TRS_quadratic"] = None
-        inner_info["ared/pred"] = None
-        inner_info["radius_update"] = None
-        inner_info["dual_clipping"] = None
-        return inner_info
+    def check_TRS_optimality(self, xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold):
+        basisfun = self.option["basisfun"]
+        pred = 0 - 0.5 * manifold.inner_product(xCur, HwCur(dxCur), dxCur) - manifold.inner_product(xCur, cxCur, dxCur)
+        dxCurnorm = manifold.norm(xCur, dxCur)
+        cxCurnorm = manifold.norm(xCur, cxCur)
+        basisxCur = basisfun(manifold, xCur)
+        HwCurmatrix = selfadj_operator2matrix(manifold, xCur, HwCur, basisxCur)
+        maxeigvalHwCur = scipy.sparse.linalg.eigsh(HwCurmatrix, k=1, which='LA', return_eigenvectors=False)[0]
+        mineigvalHwCur = scipy.sparse.linalg.eigsh(HwCurmatrix, k=1, which='SA', return_eigenvectors=False)[0]
+        Cauchydiff = pred - 0.5 * manifold.norm(xCur, cxCur)* min(TR_radius, cxCurnorm/maxeigvalHwCur)
+        Eigendiff = pred + 0.5 *(TR_radius**2)*(mineigvalHwCur)
+        Cauchycond = True if Cauchydiff >= 0 else Cauchydiff
+        Eigencond = True if Eigendiff >= 0 or mineigvalHwCur >= 0 else Eigendiff
+        print("Cauchy", Cauchycond, "Eigen", Eigencond)
+        if lam1 is not None:
+            TRS_KKTresid = HwCur(dxCur) + lam1 * dxCur + cxCur
+            TRS_compl = lam1 * (TR_radius - dxCurnorm)
+            TRS_normconst = TR_radius - dxCurnorm
+            TRS_normcond = True if TRS_normconst >= 0 else TRS_normconst
+            TRS_succeq = mineigvalHwCur + lam1
+            TRS_succeqcond = True if TRS_succeq >= 0 else TRS_succeq
+            print("TRS_KKTresid", manifold.norm(xCur, TRS_KKTresid), "TRS_compl", np.linalg.norm(TRS_compl), "TRS_normconst", TRS_normcond, "TRS_succeq", TRS_succeqcond)
+
+    def PETSc_solve_GEPTangentSpace(self, n, dim, eignum, Afun, Bfun=None, tol=1e-12, maxiter=1000, eigval_type="LARGEST_REAL"):
+        E, xr, xi = PETSc_solve(n, (n-dim)+eignum, Afun, Bfun=Bfun, tol=tol, maxiter=maxiter, eigval_type=eigval_type)
+        kvec = [None] * ((n-dim)+eignum)
+        xrarrayvec = [None] * ((n-dim)+eignum)
+        for i in range((n-dim)+eignum):
+            k = E.getEigenpair(i, xr, xi)
+            k = k.real
+            kvec[i] = k
+            xrarrayvec[i] = copy.deepcopy(np.real(xr.getArray()))
+        indices = np.argsort(-np.abs(kvec))[:eignum]  # sort by absolute value
+        indices = indices[np.argsort(np.array(kvec)[indices])]  # sort by value
+        kvects = [kvec[i] for i in indices]
+        xrvects = [xrarrayvec[i] for i in indices]
+        return kvects, xrvects
+
+    def solve_linear_equations(self, A, b, tol, exit_warning_triggered):
+        if exit_warning_triggered:
+            with warnings.catch_warnings(record=True) as caught_warnings:
+                warnings.simplefilter("always", scipy.linalg.LinAlgWarning)
+                sol, _ = scipy.sparse.linalg.lgmres(A, b, rtol=tol)
+                for warning in caught_warnings:
+                    if issubclass(warning.category, scipy.linalg.LinAlgWarning):
+                        sol = None
+                return sol
+        else:
+            sol, _ = scipy.sparse.linalg.lgmres(A, b, rtol=tol)
+        return sol
         
+    def MM0fun(self, x, y, tgtfun, reshapefun, vecfun, n, Afun, Bfun, g, Delta, manifold):
+        x1 = tgtfun(reshapefun(x[:n]))
+        x2 = tgtfun(reshapefun(x[n:]))
+        y1 = -Bfun(x1) + Afun(x2)
+        y2 = Afun(x1) - g * manifold.inner_product(x, g, x2) / Delta**2
+        y1 = vecfun(tgtfun(y1))
+        y2 = vecfun(tgtfun(y2))
+        y[:] = np.concatenate([y1, y2])
+
+    def MM1fun(self, x, y, tgtfun, reshapefun, vecfun, n, Bfun):
+        x1 = tgtfun(reshapefun(x[:n]))
+        x2 = tgtfun(reshapefun(x[n:]))
+        y1 = -Bfun(x2)
+        y2 = -Bfun(x1)
+        y1 = vecfun(tgtfun(y1))
+        y2 = vecfun(tgtfun(y2))
+        y[:] = np.concatenate([y1, y2])
+    
+    def TRSgep_matrixfree(self, A, a, B, Del, x, manifold, tolresid, tolhardcase=1e-4, exit_warning_triggered=False):
+        """
+        Solves the trust-region subproblem by a generalized eigenproblem without iterations.
+
+        minimize (x^T A x) / 2 + a^T x
+        subject to x^T B x <= Del^2
+
+        Parameters:
+            A (LinearOperator): Symmetric operator.
+            a (tangent vector): dimx1 vector.
+            B (LinearOperator): Symmetric positive definite operator.
+            Del (float): Radius constraint.
+            x: current point
+            manifold: manifold
+            tolresid (float): Tolerance for the residual.
+            tolhardcase (float): Tolerance for the hard case.
+            exit_warning_triggered (bool): Whether to exit when a warning is triggered.
+
+        Returns:
+            tgtv (ndarray): Solution vector.
+            lam1 (float): Lagrange multiplier.
+            type (str): Information about the solution.
+        """
+
+        # Construct the block matrix MM1
+        n = len(vectorizefun(manifold, x, manifold.zero_vector(x)))
+        dim = manifold.dim
+        tgtfun = lambda v: manifold.to_tangent_space(x, v)
+        reshapefun = lambda v: tgtvecshapefun(manifold, x, v)
+        vecfun = lambda tanvec: vectorizefun(manifold, x, tanvec)
+
+        # Possible interior solution
+        Aoperator = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda dir: vecfun(A(tgtfun(reshapefun(dir)))))
+        avec = vecfun(tgtfun(a))
+
+        p1 = self.solve_linear_equations(Aoperator, -avec, tolhardcase, exit_warning_triggered)
+        if p1 is None:
+            return None, None, "solve failed"
+        p1 = np.real(p1)
+        p1 = tgtfun(reshapefun(p1))
+        is_p1_available = True
+        if manifold.norm(x, A(p1) + a) / manifold.norm(x, a) < 1e-5:
+            if manifold.inner_product(x, p1, B(p1)) >= Del**2:  # outside of the trust region
+                is_p1_available = False  # ineligible
+        else:  # numerically incorrect
+            is_p1_available = False
+
+        lambdaMM0 = lambda x, y: self.MM0fun(x, y, tgtfun, reshapefun, vecfun, n, A, B, a, Del, manifold)
+        lambdaMM1 = lambda x, y: self.MM1fun(x, y, tgtfun, reshapefun, vecfun, n, B)
+
+        k, xr = self.PETSc_solve_GEPTangentSpace(2*n, 2*dim, 1, lambdaMM0, lambdaMM1, tol=tolresid, eigval_type="LARGEST_REAL")
+        lam1 = k[0]
+        V = xr[0].real
+        v = V[:n]  # extract solution component
+
+        tgtv = tgtfun(reshapefun(v))
+        normv = np.sqrt(manifold.inner_product(x,  B(tgtv), tgtv))
+        tgtv = tgtv / normv * Del  # in the easy case, this naive normalization improves accuracy
+        if manifold.inner_product(x, tgtv, a) > 0:
+            tgtv = -tgtv  # take correct sign
+        type = "boundary"
+
+        if normv < tolhardcase:  # enter hard case
+            print("enter hard case, consinder debug chance! rare case!")
+            x1 = np.real(tgtfun(reshapefun(V[n:])))
+            Pvect = x1  # first try only k=1, almost always enough
+            alpha1 = copy.deepcopy(lam1)
+            Alam1B = lambda vec: vecfun(A(tgtfun(reshapefun(vec)))) + lam1 * vecfun(B(tgtfun(reshapefun(vec))))
+            # Alam1B = lambda vec: vecfun(tgtfun(A(tgtfun(reshapefun(vec))))) + lam1 * vecfun(tgtfun(B(tgtfun(reshapefun(vec)))))
+            BPvecti = B(Pvect)
+            alpha1Bpvecti2= lambda vec: alpha1 * manifold.inner_product(x, BPvecti, tgtfun(reshapefun(vec))) * BPvecti
+            H = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda vec: Alam1B(vec) + alpha1Bpvecti2(vec))
+
+            x2 = self.solve_linear_equations(H, -avec, tolhardcase, exit_warning_triggered)
+            if x2 is None:
+                return None, None, "solve failed"
+            x2 = np.real(tgtfun(reshapefun(x2)))
+            type = "hardcase_1"
+
+            # Residual check for hard case refinement
+            """tolhardcase緩めてprintデバッグしまくったほうが良い"""
+            if manifold.norm(x, Alam1B(x2) + a) / manifold.norm(x, a) > tolhardcase:
+                print("hardcase")
+                maxii = min(dim, 9)
+                lambdaA = lambda x, y: basefun(x, y, A, tgtfun, reshapefun, vecfun)
+                lambdaB = lambda x, y: basefun(x, y, B, tgtfun, reshapefun, vecfun)
+                _, Pvects = self.PETSc_solve_GEPTangentSpace(n, dim, maxii, lambdaA, lambdaB, tol=tolresid, eigval_type="SMALLEST_REAL")
+                for ii in [3, 6, 9]:
+                    if maxii < ii:
+                        break
+                    type = f"hardcase_{ii}"
+                    Pvectii = Pvects[:ii]
+                    BPvects = [B(tgtfun(reshapefun(Pvect))) for Pvect in Pvectii]
+                    alpha1Bpvecti2= lambda vec: alpha1 * np.sum([manifold.inner_product(x, BPvect, tgtfun(reshapefun(vec))) * BPvect for BPvect in BPvects], axis=0)
+                    H = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda vec: Alam1B(vec) + alpha1Bpvecti2(vec))
+                    x2 = self.solve_linear_equations(H, -avec, tolhardcase, exit_warning_triggered)
+                    if x2 is None:
+                        return None, None, "solve failed"
+                    x2 = np.real(tgtfun(reshapefun(x2)))
+                    if manifold.norm(x, Alam1B(x2) + a) / manifold.norm(x, a) < tolhardcase:
+                        break
+            Bx = B(x1)
+            Bx2 = B(x2)
+            aa = manifold.inner_product(x, x1, Bx)
+            bb = 2 * manifold.inner_product(x, x2, Bx)
+            cc = manifold.inner_product(x, x2, Bx2) - Del**2
+            alp = (-bb + np.sqrt(bb**2 - 4 * aa * cc)) / (2 * aa)  #norm(x2+alp*x)-Delta
+            tgtv = x2 + alp * x1
+
+        # Choose between interior and boundary solution
+        if is_p1_available:
+            p1objval = manifold.inner_product(x, 0.5 * A(p1) + a, p1)
+            tgtvobjval = manifold.inner_product(x, 0.5 * A(tgtv) + a, tgtv)
+            if p1objval < tgtvobjval:
+                tgtv = p1
+                lam1 = 0
+                type = "interior"
+        return tgtv, lam1, type
+
     def compute_Cauchy_step(self, xCur, TR_radius, TRS_quadratic, TRS_linear, manifold):
         inner_product_TRSquadlin_lin = manifold.inner_product(xCur, TRS_quadratic(TRS_linear), TRS_linear)
         norm_TRS_linear = manifold.norm(xCur, TRS_linear)
@@ -499,52 +500,47 @@ class RIPTRM(Solver):
         lam1 = None
         return dxCur, lam1, type
 
-    def inner_iteration(self, problem, outer_iteration, outer_start_time, x_initial, y_initial, mu, initial_TR_radius, costfun, ineqconstraints, manifold, inner_option):
-        assert 'stopping_criterion_Lagrangian' in inner_option, "Key 'stopping_criterion_Lagrangian' not found in inner_option"
-        assert 'stopping_criterion_complementarity' in inner_option, "Key ''stopping_criterion_complementarity'' not found in inner_option"
-        assert 'second_order_stationarity' in inner_option, "Key 'second_order_stationarity' not found in inner_option"
-        if inner_option["second_order_stationarity"]:
-            assert 'stopping_criterion_second_order' in inner_option, "Key 'stopping_criterion_second_order' not found in inner_option"
-        assert 'TRS_solver' in inner_option, "Key 'TRS_solver' not found in inner_option"
-        assert 'inner_maxiter' in inner_option, "Key 'inner_maxiter' not found in inner_option"
-        assert 'inner_maxtime' in inner_option, "Key 'inner_maxtime' not found in inner_option"
-        assert 'gamma' in inner_option, "Key 'gamma' not found in inner_option"
-        assert 'maximal_TR_radius' in inner_option, "Key 'maximal_TR_radius' not found in inner_option"
-        assert 'rho' in inner_option, "Key 'rho' not found in inner_option"
-        assert 'const_left' in inner_option, "Key 'const_left' not found in inner_option"
-        assert 'const_right' in inner_option, "Key 'const_right' not found in inner_option"
-        assert 'exit_warning_triggered' in inner_option, "Key 'exit_warning_triggered' not found in inner_option"
-        assert 'TRS_tolhardcase' in inner_option, "Key 'TRS_tolhardcase' not found in inner_option"
-        assert 'checkTRSoptimality' in inner_option, "Key 'checkTRSoptimality not found in inner_option"
-        assert 'verbosity' in inner_option, "Key 'verbosity' not found in inner_option"
-        assert 'basisfun' in inner_option, "Key 'basisfun' not found in inner_option"
-        assert 'save_inner_iteration' in inner_option, "Key 'save_inner_iteration' not found in inner_option"
-        assert 'manviofun' in inner_option, "Key 'manviofun' not found in inner_option"
-        assert 'callbackfun' in inner_option, "Key 'callbackfun' not found in inner_option"
+    def set_initial_inner_info(self, inner_iteration, TR_radius):
+        inner_info = {}
+        inner_info["inner_status"] = None
+        inner_info["num_inner"] = inner_iteration
+        inner_info["TR_radius"] = TR_radius
+        inner_info["normdx"] = None
+        inner_info["dxtype"] = None
+        inner_info["minxfeasi"] = None
+        inner_info["minyfeasi"] = None
+        inner_info["compl"] = None
+        inner_info["mineigvalHw"] = None
+        inner_info["ared/pred"] = None
+        inner_info["radius_update"] = None
+        inner_info["dual_clipping"] = None
+        return inner_info
 
+    def inner_iteration(self, problem, outer_iteration, outer_start_time, x_initial, y_initial, mu, initial_TR_radius, inner_option):
         # Set parameters
         stopping_criterion_Lagrangian = inner_option["stopping_criterion_Lagrangian"]
         stopping_criterion_complementarity = inner_option["stopping_criterion_complementarity"]
-        second_order_stationarity = inner_option["second_order_stationarity"]
+        second_order_stationarity = self.option["second_order_stationarity"]
         if second_order_stationarity:
             stopping_criterion_second_order = inner_option["stopping_criterion_second_order"]
-        TRS_solver = inner_option["TRS_solver"]
-        gamma = inner_option["gamma"]
-        maximal_TR_radius = inner_option["maximal_TR_radius"]
-        inner_maxiter = inner_option["inner_maxiter"]
-        inner_maxtime = inner_option["inner_maxtime"]
-        rho = inner_option["rho"]
-        const_left = inner_option["const_left"]
-        const_right = inner_option["const_right"]
-        exit_warning_triggered = inner_option["exit_warning_triggered"]
-        TRS_tolhardcase = inner_option["TRS_tolhardcase"]
-        checkTRSoptimality = inner_option["checkTRSoptimality"]
-        verbosity = inner_option["verbosity"]
-        basisfun = inner_option["basisfun"]
-        save_inner_iteration = inner_option["save_inner_iteration"]
-        manviofun = inner_option["manviofun"]
-        callbackfun = inner_option["callbackfun"]
-        
+        TRS_solver = self.option["TRS_solver"]
+        gamma = self.option["gamma"]
+        maximal_TR_radius = self.option["maximal_TR_radius"]
+        inner_maxiter = self.option["inner_maxiter"]
+        inner_maxtime = self.option["inner_maxtime"]
+        TRS_tolresid = self.option["TRS_tolresid"]
+        TRS_tolhardcase = self.option["TRS_tolhardcase"]
+        rho = self.option["rho"]
+        const_left = self.option["const_left"]
+        const_right = self.option["const_right"]
+        exit_warning_triggered = self.option["exit_warning_triggered"]
+        checkTRSoptimality = self.option["checkTRSoptimality"]
+        verbosity = self.option["verbosity"]
+        basisfun = self.option["basisfun"]
+        save_inner_iteration =  self.option["save_inner_iteration"]
+        manviofun = self.option["manviofun"]
+        callbackfun = self.option["callbackfun"]
+
         # Set initial point
         xCur = x_initial
         yCur = y_initial
@@ -552,181 +548,207 @@ class RIPTRM(Solver):
         TR_radius = initial_TR_radius
         inner_iteration = 0
 
-        # Set functions
-        egradcostfun = costfun.get_gradient_operator()
-        ehesscostfunoprator = costfun.get_hessian_operator()
-        costineqconstvecfun = lambda x: np.array([ineqfun(x) for ineqfun in ineqconstraints.constraint])
-        egradineqconstvec = [ineqfun.get_gradient_operator() for ineqfun in ineqconstraints.constraint]
-        ehessineqconstoperatorvec = [ineqfun.get_hessian_operator() for ineqfun in ineqconstraints.constraint]
-        # costLagrangefun = lambda x, y: costfun(x) - y @ costineqconstvecfun(x)
-        egradLagrangefun = lambda x, y: egradcostfun(x) - y @ np.array([egradineqfun(x) for egradineqfun in egradineqconstvec])
-        gradLagrangefun = lambda x, y: manifold.euclidean_to_riemannian_gradient(x, egradLagrangefun(x, y))
-        ehessLagrangefun = lambda x, y, dx: ehesscostfunoprator(x, dx) - y @ np.array([ehessineqconstoperator(x, dx) for ehessineqconstoperator in ehessineqconstoperatorvec])
-        hessLagrangefun = lambda x, y, dx: manifold.euclidean_to_riemannian_hessian(x, egradLagrangefun(x, y), ehessLagrangefun(x, y, dx), dx)
+        # Set function components
+        costfun = problem.cost
+        ineqconstraints = problem.ineqconstraints_all
+        manifold = problem.manifold
+        gradcostfun = problem.riemannian_gradient
+        gradineqconstraints = problem.ineqconstraints_riemannian_gradient_all
+        hesscostfun = problem.riemannian_hessian
+        hessineqconstraints = problem.ineqconstraints_riemannian_hessian_all
+
+        # Set vector-valued functions
+        costineqconstvecfun = lambda x: np.array([-ineqfun(x) for ineqfun in ineqconstraints])
+        gradineqconstvecfun = lambda x: [-grad(x) for grad in gradineqconstraints]
+        hessineqconstvecfun = lambda x, dx: [-hess(x, dx) for hess in hessineqconstraints]
+
+        # Define functions
+        def gradLagrangefun(x, y, gradcostx=None, gradineqconstvecx=None):
+            if gradcostx is None:
+                gradcostx = gradcostfun(x)
+            if gradineqconstvecx is None:
+                gradineqconstvecx = gradineqconstvecfun(x)
+            vec = gradcostx
+            for i in range(len(y)):
+                vec = vec - y[i] * gradineqconstvecx[i]
+            return vec
+
+        def hessLagrangefun(x, y, dx):
+            vec = hesscostfun(x, dx)
+            hessineqconstvec = hessineqconstvecfun(x, dx)
+            for i in range(len(y)):
+                vec = vec + y[i] * hessineqconstvec[i]
+            return vec
         
+        def Gxfun(x, v, gradineqconstvecx=None):
+            if gradineqconstvecx is None:
+                gradineqconstvecx = gradineqconstvecfun(x)
+            vec = manifold.zero_vector(x)
+            for idx in range(len(gradineqconstvecx)):
+                vec = vec + v[idx] * gradineqconstvecx[idx]
+            return vec
+
+        def Gxajfun(x, dx, gradineqconstvecx=None):
+            if gradineqconstvecx is None:
+                gradineqconstvecx = gradineqconstvecfun(x)
+            return np.array([manifold.inner_product(x, gradineq, dx) for gradineq in gradineqconstvecx])
+        
+        def logbarrfun(x, mu, costfunx=None, costineqconstvecx=None):
+            if costfunx is None:
+                costfunx = costfun(x)
+            if costineqconstvecx is None:
+                costineqconstvecx = costineqconstvecfun(x)
+            return costfun(x) - mu * np.sum(np.log(costineqconstvecx))
+
         inner_start_time = time.time()
-        normgradLagfun = manifold.norm(xCur, gradLagrangefun(xCur, yCur))
-        inner_status = ""
+        inner_status = "initial"
         while True:
+            costxCur = costfun(xCur)
+            costineqconstvecxCur = costineqconstvecfun(xCur)
+            gradcostfunxCur = gradcostfun(xCur)
+            gradineqconstvecxCur = gradineqconstvecfun(xCur)
+            normgradLagfun = manifold.norm(xCur, gradLagrangefun(
+                xCur,
+                yCur,
+                gradcostx=gradcostfunxCur,
+                gradineqconstvecx=gradineqconstvecxCur))
+
+            # def inner_check_stopping_criteria(self):
             if verbosity > 1:
-                # print(f"Iteration: {iteration}-{inner_iteration}, Cost: {costfun(xCur)}, KKT residual: {residual}, TR_radius: {TR_radius}")
-                print(f"Iteration: {outer_iteration}-{inner_iteration}, Cost: {costfun(xCur)}, KKT resid: {manifold.norm(xCur, gradLagrangefun(xCur, yCur))}, TR_radius: {TR_radius}, {inner_status}")
+                costprint = "{:.3e}".format(costfun(xCur))
+                KKTresidprint = "{:.3e}".format(normgradLagfun)
+                TRradiusprint = "{:.3e}".format(TR_radius)
+                print(f"Iteration: {outer_iteration}-{inner_iteration}, Cost: {costprint}, KKT resid: {KKTresidprint}, TR_radius: {TRradiusprint}, Status: {inner_status}")
             inner_iteration += 1
-            
+
             # Set initial inner_info
             inner_info = self.set_initial_inner_info(inner_iteration, TR_radius)
-            
+
             # Check stopping criteria (time and iteration)
             if inner_maxtime is not None:
                 run_time = time.time() - inner_start_time
                 if run_time >= inner_maxtime:
-                    inner_info["inner_status"] = "unconverged: max time exceeded"
-                    return x_initial, y_initial, inner_info, x_initial
+                    inner_info["inner_status"] = "max-time-exceeded"
+                    return x_initial, y_initial, initial_TR_radius, inner_info, x_initial
             if inner_maxiter is not None:
                 if inner_iteration >= inner_maxiter:
-                    inner_info["inner_status"] = "unconverged: max iter exceeded"
-                    return x_initial, y_initial, inner_info, x_initial
+                    inner_info["inner_status"] = "max-iter-exceeded"
+                    return x_initial, y_initial, initial_TR_radius, inner_info, x_initial
 
-            # Compute cost and gradients at xCur
-            costineqconstvecxCur = costineqconstvecfun(xCur)
-            gradcostfunxCur = manifold.euclidean_to_riemannian_gradient(xCur, egradcostfun(xCur))
-            gradineqconstvecxCur = [manifold.euclidean_to_riemannian_gradient(xCur, egradineqfun(xCur)) for egradineqfun in egradineqconstvec]
-            
             # Set functions at xCur
-            Gx = lambda v: np.sum([v[idx] * gradineqconstvecxCur[idx] for idx in range(len(gradineqconstvecxCur))], axis=0)
-            Gxaj = lambda dx: np.array([manifold.inner_product(xCur, gradineqvec, dx) for gradineqvec in gradineqconstvecxCur])
-            TRS_quadratic = lambda dx: hessLagrangefun(xCur, yCur, dx) + Gx((yCur * Gxaj(dx)) / costineqconstvecxCur)
-            TRS_linear = gradcostfunxCur -  Gx(mu / costineqconstvecxCur)
-            
+            GxCur = lambda v: Gxfun(xCur, v, gradineqconstvecx=gradineqconstvecxCur)
+            GxajCur = lambda dx: Gxajfun(xCur, dx, gradineqconstvecx=gradineqconstvecxCur)
+            HwCur = lambda dx: hessLagrangefun(xCur, yCur, dx) + GxCur((yCur * GxajCur(dx)) / costineqconstvecxCur)
+            cxCur = gradcostfunxCur -  GxCur(mu / costineqconstvecxCur)
+
+            # Compute the step
             if TRS_solver == 'Cauchy':
-                dxCur, lam1, type = self.compute_Cauchy_step(xCur, TR_radius, TRS_quadratic, TRS_linear, manifold)
+                dxCur, lam1, type = self.compute_Cauchy_step(xCur, TR_radius, HwCur, cxCur, manifold)
                 inner_info["dxtype"] = type
             elif TRS_solver == 'Exact_RepMat':
-                basis = basisfun(manifold, xCur)
-                Hmatrix = selfadj_operator2matrix(manifold, xCur, TRS_quadratic, basis)
-                cvector = np.empty(len(basis))
-                for i in range(len(basis)):
-                    cvector[i] = manifold.inner_product(xCur, TRS_linear, basis[i])
-                n = len(basis)
-                coeff, lam1, type = TRSgep(Hmatrix, cvector, np.eye(n), TR_radius, TRS_tolhardcase, exit_warning_triggered)
-                if exit_warning_triggered and coeff is None:
-                    inner_info["inner_status"] = "unconverged: TRS failed"
-                    return x_initial, y_initial, inner_info, x_initial
-                
-                dxCur = np.sum([coeff[i] * basis[i] for i in range(n)], axis=0)
+                xdim = manifold.dim
+                basisxCur = basisfun(manifold, xCur)
+                HwCurmatrix = selfadj_operator2matrix(manifold, xCur, HwCur, basisxCur)
+                cxCurvector = np.empty(xdim)
+                for i in range(xdim):
+                    cxCurvector[i] = manifold.inner_product(xCur, cxCur, basisxCur[i])
+                coeff, lam1, type = TRSgep(HwCurmatrix, cxCurvector, np.eye(xdim), TR_radius, TRS_tolhardcase, exit_warning_triggered)
                 inner_info["dxtype"] = type
+                if exit_warning_triggered and coeff is None:
+                    inner_info["inner_status"] = "TRS-failed"
+                    return x_initial, y_initial, initial_TR_radius, inner_info, x_initial
+                dxCur = manifold.zero_vector(xCur)
+                for i in range(xdim):
+                    dxCur = dxCur + coeff[i] * basisxCur[i]
             elif TRS_solver == 'Exact_Operator':
                 idfun = lambda vec: vec
-                dxCur, lam1, type = TRSgep_matrixfree(TRS_quadratic, TRS_linear, idfun, TR_radius, xCur, manifold, TRS_tolhardcase, exit_warning_triggered)
-                if exit_warning_triggered and dxCur is None:
-                    inner_info["inner_status"] = "unconverged: TRS failed"
-                    return x_initial, y_initial, inner_info, x_initial
+                dxCur, lam1, type = self.TRSgep_matrixfree(HwCur, cxCur, idfun, TR_radius, xCur, manifold, TRS_tolresid, TRS_tolhardcase, exit_warning_triggered)
                 inner_info["dxtype"] = type
+                if exit_warning_triggered and dxCur is None:
+                    inner_info["inner_status"] = "TRS-failed"
+                    return x_initial, y_initial, initial_TR_radius, inner_info, x_initial
             else:
                 raise ValueError(f"TRS_solver {TRS_solver} is not supported.")
-            
+
+            # Check TRS optimality
             if checkTRSoptimality:
-                pred = - 0.5 * manifold.inner_product(xCur, TRS_quadratic(dxCur), dxCur) - manifold.inner_product(xCur, TRS_linear, dxCur)
-                dxCurnorm = manifold.norm(xCur, dxCur)
-                cnorm = manifold.norm(xCur, TRS_linear)
-                basis = basisfun(manifold, xCur)
-                Hmatrix = selfadj_operator2matrix(manifold, xCur, TRS_quadratic, basis)
-                maxeigvalH = scipy.sparse.linalg.eigsh(Hmatrix, k=1, which='LA', return_eigenvectors=False)[0]
-                mineigvalH = scipy.sparse.linalg.eigsh(Hmatrix, k=1, which='SA', return_eigenvectors=False)[0]
-                
-                Cauchydiff = pred - 0.5 * manifold.norm(xCur, TRS_linear)* min(TR_radius, cnorm/maxeigvalH)
-                Eigendiff = pred + 0.5 *(TR_radius**2)*(mineigvalH)
-                Cauchycond = True if Cauchydiff >= 0 else Cauchydiff
-                Eigencond = True if Eigendiff >= 0 or mineigvalH >= 0 else Eigendiff
-                print("Cauchy", Cauchycond, "Eigen", Eigencond)
-                if lam1 is not None:
-                    TRS_KKTresid = TRS_quadratic(dxCur) + lam1 * dxCur + TRS_linear
-                    TRS_compl = lam1 * (TR_radius - dxCurnorm)
-                    TRS_normconst = TR_radius - dxCurnorm
-                    TRS_normcond = True if TRS_normconst >= 0 else TRS_normconst
-                    TRS_succeq = mineigvalH + lam1
-                    TRS_succeqcond = True if TRS_succeq >= 0 else TRS_succeq
-                    print("TRS_KKTresid", np.linalg.norm(TRS_KKTresid), "TRS_compl", np.linalg.norm(TRS_compl), "TRS_normconst", TRS_normcond, "TRS_succeq", TRS_succeqcond)
-            
-            dyCur = - yCur + mu * (1 / costineqconstvecxCur) - yCur * Gxaj(dxCur) / costineqconstvecxCur
-            
+                self.check_TRS_optimality(self, xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold)
+
+            # Update x and y
+            dyCur = - yCur + mu * (1 / costineqconstvecxCur) - yCur * GxajCur(dxCur) / costineqconstvecxCur
             xNew = manifold.retraction(xCur, dxCur)
             yNew = yCur + dyCur
+            costxNew = costfun(xNew)
             costineqconstvecxNew = costineqconstvecfun(xNew)
-            
-            primal_feasibility_criterion = np.all(costineqconstvecxNew > 0)
-            dual_feasibility_criterion = np.all(yNew > 0)
+
+            # Check stopping criteria
+            xfeasi_criterion = np.all(costineqconstvecxNew > 0)
+            yfeasi_criterion = np.all(yNew > 0)
             normgradLagfun = manifold.norm(xNew, gradLagrangefun(xNew, yNew))
             normgradLagfun_criterion = normgradLagfun <= stopping_criterion_Lagrangian
             complementarity = np.linalg.norm(yNew * costineqconstvecxNew - mu)
             complementary_criterion = complementarity <= stopping_criterion_complementarity
+            mineigvalHwNew = None
+            mineigval_criterion = True
             if second_order_stationarity:
-                HwNew = lambda dx: hessLagrangefun(xNew, yNew, dx) + Gx((yNew * Gxaj(dx)) / costineqconstvecxNew)
+                gradineqconstvecxNew = gradineqconstvecfun(xNew)
+                GxNew = lambda v: Gxfun(xNew, v, gradineqconstvecx=gradineqconstvecxNew)
+                GxajNew = lambda dx: Gxajfun(xNew, dx, gradineqconstvecx=gradineqconstvecxNew)
+                HwNew = lambda dx: hessLagrangefun(xNew, yNew, dx) + GxNew((yNew * GxajNew(dx)) / costineqconstvecxNew)
                 if TRS_solver == 'Exact_RepMat':
-                    """ここ次のステップで使い回せると思う"""
                     basisxNew = basisfun(manifold, xNew)
                     HwNewmatrix = selfadj_operator2matrix(manifold, xNew, HwNew, basisxNew)
                     mineigvalHwNew = scipy.sparse.linalg.eigsh(HwNewmatrix, k=1, which='SA', return_eigenvectors=False)[0]
-                    mineigval_TRS_quadratic = mineigvalHwNew
-                    mineigval_criterion = True if mineigval_TRS_quadratic >= -stopping_criterion_second_order else False
-                    # print("mineigval_TRS_quadratic", mineigval_criterion, mineigval_TRS_quadratic, -stopping_criterion_second_order)
+                    mineigval_criterion = True if mineigvalHwNew >= -stopping_criterion_second_order else False
                 elif TRS_solver == 'Exact_Operator':
-                    n = len(manifold.zero_vector(xNew).reshape(-1))
-                    # dim = manifold.dim
-                    tgtvec_shape = manifold.zero_vector(xNew).shape
                     tgtfun = lambda v: manifold.to_tangent_space(xNew, v)
-                    reshapefun = lambda v: v.reshape(tgtvec_shape)
-                    vecfun = lambda v: v.reshape(-1)
+                    reshapefun = lambda v: tgtvecshapefun(manifold, xNew, v)
+                    vecfun = lambda tanvec: vectorizefun(manifold, xNew, tanvec)
+                    n = len(vecfun(manifold.zero_vector(xNew)))
                     lambdaHwNew = lambda x, y: basefun(x, y, HwNew, tgtfun, reshapefun, vecfun)
-                    E, xr, xi = PETSc_solve(n, 1, lambdaHwNew, eigval_type="SMALLEST_REAL")
-                    eigval = E.getEigenpair(0, xr, xi)  # min(0, smallest eigenvalue)
-                    eigval = eigval.real
-                    mineigval_TRS_quadratic = eigval
-                    mineigval_criterion = True if mineigval_TRS_quadratic >= -stopping_criterion_second_order else False
-                    # print("mineigval_TRS_quadratic", mineigval_criterion, mineigval_TRS_quadratic, -stopping_criterion_second_order)
-            else:
-                mineigval_TRS_quadratic = None  # ignore as the stopping criterion
-                mineigval_criterion = True  # ignore as the stopping criterion
-            
+                    dim = manifold.dim
+                    k, _ = self.PETSc_solve_GEPTangentSpace(n, dim, 1, lambdaHwNew, tol=TRS_tolresid, eigval_type="SMALLEST_REAL")
+                    mineigvalHwNew = k[0].real
+                    mineigval_criterion = True if mineigvalHwNew >= -stopping_criterion_second_order else False
+                else:
+                    raise ValueError(f"TRS_solver {TRS_solver} is not supported.")
+
+            # Set inner_info
             inner_info["normdx"] = manifold.norm(xCur, dxCur)
-            inner_info["min_primal_feasibility"] = min(costineqconstvecxNew)
-            inner_info["min_dual_feasibility"] = min(yNew)
+            inner_info["minxfeasi"] = min(costineqconstvecxNew)
+            inner_info["minyfeasi"] = min(yNew)
             # inner_info["normgradLagfun"] = normgradLagfun
-            inner_info["complementarity"] = complementarity
-            inner_info["mineigval_TRS_quadratic"] = mineigval_TRS_quadratic
-            
-            if primal_feasibility_criterion and dual_feasibility_criterion and normgradLagfun_criterion and complementary_criterion and mineigval_criterion:
+            inner_info["compl"] = complementarity
+            inner_info["mineigvalHw"] = mineigvalHwNew
+
+            # Return if all stopping criteria are satisfied
+            if xfeasi_criterion and yfeasi_criterion and normgradLagfun_criterion and complementary_criterion and mineigval_criterion:
                 inner_status = "converged"
                 inner_info["inner_status"] = inner_status
-                return xNew, yNew, inner_info, inner_xPrev
-            
+                return xNew, yNew, TR_radius, inner_info, inner_xPrev
+
+            # 
             normdxCur = manifold.norm(xCur, dxCur)
-            if not primal_feasibility_criterion:
+            if not xfeasi_criterion:
                 inner_status = "primal_infeasible"
                 inner_info["inner_status"] = inner_status
                 TR_radius = gamma * normdxCur
-                
                 if save_inner_iteration:
                     eval_log = evaluation(problem, inner_xPrev, xCur, yCur, [], manviofun, callbackfun)
                     solver_log = self.solver_status(
                             yCur,
                             mu,
-                            ineqconstraints,
                             save_inner_iteration,
                             inner_info = inner_info,
                             )
                     self.add_log(outer_iteration, outer_start_time, eval_log, solver_log)
-                
                 continue
-            
-            logbarrierfun = lambda x: costfun(x) - mu * np.sum(np.log(costineqconstvecfun(x)))
-            ared = logbarrierfun(xCur) - logbarrierfun(xNew)
-            pred = - 0.5 * manifold.inner_product(xCur, TRS_quadratic(dxCur), dxCur) - manifold.inner_product(xCur, TRS_linear, dxCur)
-            
+
+            ared = logbarrfun(xCur, mu, costfunx=costxCur, costineqconstvecx=costineqconstvecxCur) - logbarrfun(xNew, mu, costfunx=costxNew, costineqconstvecx=costineqconstvecxNew)
+            pred = 0 - 0.5 * manifold.inner_product(xCur, HwCur(dxCur), dxCur) - manifold.inner_product(xCur, cxCur, dxCur)
             # inner_info["ared"] = ared
             # inner_info["pred"] = pred
             inner_info["ared/pred"] = ared / pred
-            
             if ared < 0.25 * pred:
                 inner_info["radius_update"] = "reduced"
                 TR_radius = 0.25 * TR_radius
@@ -736,7 +758,6 @@ class RIPTRM(Solver):
             else:
                 inner_info["radius_update"] = "unchanged"
                 TR_radius = TR_radius
-            
             if ared > rho * pred:
                 inner_status = "successful"
                 inner_info["inner_status"] = inner_status
@@ -745,7 +766,6 @@ class RIPTRM(Solver):
                 I_right = np.maximum(const_right, const_right / mu, np.maximum(yCur, const_right / costineqconstvecxNew))
                 clippingfun = lambda yNew: np.minimum(np.maximum(yNew, I_left), I_right)
                 clippedyNew = clippingfun(yNew)
-                
                 if np.array_equal(yNew, clippedyNew):
                     inner_info["dual_clipping"] = False
                 else:
@@ -756,62 +776,45 @@ class RIPTRM(Solver):
                 inner_info["inner_status"] = inner_status
                 xCur = xCur
                 yCur = yCur
-                
+
             if save_inner_iteration:
                 eval_log = evaluation(problem, inner_xPrev, xCur, yCur, [], manviofun, callbackfun)
                 solver_log = self.solver_status(
                         yCur,
                         mu,
-                        ineqconstraints,
                         save_inner_iteration,
                         inner_info = inner_info,
                         )
                 self.add_log(outer_iteration, outer_start_time, eval_log, solver_log)
-                
+
             inner_xPrev = copy.deepcopy(xCur)
-    
+
     # Running an experiment
     def run(self, problem):
-        # Assertion
-        assert hasattr(problem, 'searchspace')
-        assert hasattr(problem, 'costfun')
-        assert hasattr(problem, 'ineqconstraints')
-        assert hasattr(problem, 'eqconstraints')
-        assert hasattr(problem, 'initialpoint')
-        assert hasattr(problem, 'initialineqLagmult')
-        assert hasattr(problem, 'initialeqLagmult')
-
-        if problem.eqconstraints.has_constraint:
+        if problem.has_eqconstraints:
             warnings.warn("Equality constraints detecred. Currently, RIPTRM does not support equality constraints and will completely ignore them.", Warning)
-
-        # Set the optimization problem
-        manifold = problem.searchspace
-        costfun = problem.costfun
-        original_ineqconstraints = problem.ineqconstraints
-        ineqconstraints = copy.deepcopy(problem.ineqconstraints)
-        # eqconstraints = problem.eqconstraints
-
-        # Set the inverse of the inequality constraints
-        def set_inverse_ineqconstraints(idx):
-            costineqfun = original_ineqconstraints.constraint[idx]
-            @pymanopt.function.autograd(manifold)
-            def invcostineqfun(x):
-                return -1 * costineqfun(x)
-            return invcostineqfun
-        for idx in range(original_ineqconstraints.num_constraint):
-            ineqconstraints.constraint[idx] = set_inverse_ineqconstraints(idx)
 
         # Set initial points
         option = self.option
+        costfun = problem.cost
         xCur = problem.initialpoint
         yCur = problem.initialineqLagmult
         muCur = option["initial_barrier_parameter"]
         xPrev = copy.deepcopy(xCur)
         iteration = 0
         start_time = time.time()
-        
-        # Set parameters
-        initial_TR_radius = option['initial_TR_radius']
+
+        # Set the trust region radius
+        if option['initial_TR_radius'] is None:
+            try:
+                Delta_bar = problem.manifold.typical_dist
+            except NotImplementedError:
+                Delta_bar = np.sqrt(problem.manifold.dim)
+            initial_TR_radius = Delta_bar / 8
+        else:
+            initial_TR_radius = option['initial_TR_radius']
+
+        # Set parameters for outer iteration
         second_order_stationarity = option['second_order_stationarity']
         forcing_function_Lagrangian = option['forcing_function_Lagrangian']
         forcing_function_complementarity = option['forcing_function_complementarity']
@@ -829,12 +832,11 @@ class RIPTRM(Solver):
         solver_log = self.solver_status(
                       yCur,
                       muCur,
-                      ineqconstraints,
                       save_inner_iteration,
                       inner_info=None,
                       )
         self.add_log(iteration, start_time, eval_log, solver_log)
-        
+
         # Preparation for check stopping criteria
         residual = eval_log["residual"]
         tolresid = option["tolresid"]
@@ -858,15 +860,16 @@ class RIPTRM(Solver):
                 break
             # Count an iteration
             iteration += 1
-            
+
             # Update the inner option (part 2)
+            inner_option = {}
             inner_option["stopping_criterion_Lagrangian"] = forcing_function_Lagrangian(muCur)
             inner_option["stopping_criterion_complementarity"] = forcing_function_complementarity(muCur)
             if second_order_stationarity:
                 inner_option["stopping_criterion_second_order"] = forcing_function_second_order(muCur)
 
-            xNew, yNew, inner_info, inner_xPrev = self.inner_iteration(problem, iteration, start_time, xCur, yCur, muCur, initial_TR_radius, costfun, ineqconstraints, manifold, inner_option)
-            
+            xNew, yNew, _, inner_info, inner_xPrev = self.inner_iteration(problem, iteration, start_time, xCur, yCur, muCur, initial_TR_radius, inner_option)
+
             # Update variables
             xCur = copy.deepcopy(xNew)
             yCur = copy.deepcopy(yNew)
@@ -878,12 +881,11 @@ class RIPTRM(Solver):
             solver_log = self.solver_status(
                       yCur,
                       muCur,
-                      ineqconstraints,
                       save_inner_iteration,
                       inner_info = inner_info,
                       )
             self.add_log(iteration, start_time, eval_log, solver_log)
-            
+
             # Update previous x and residual
             xPrev = copy.deepcopy(xCur)
             residual = eval_log["residual"]
@@ -906,13 +908,12 @@ class RIPTRM(Solver):
     def solver_status(self,
                       yCur,
                       mu,
-                      ineqconstraints,
                       save_inner_iteration,
                       inner_info = None,
                       ):
         solver_status = {}
         solver_status["mu"] = mu
-        
+
         if inner_info is not None:
             solver_status["num_inner"] = inner_info["num_inner"]
             solver_status["inner_status"] = inner_info["inner_status"]
@@ -926,32 +927,31 @@ class RIPTRM(Solver):
             if inner_info is not None:
                 solver_status["dxtype"] = inner_info["dxtype"]
                 solver_status["normdx"] = inner_info["normdx"]
-                solver_status["min_primal_feasibility"] = inner_info["min_primal_feasibility"]
-                solver_status["min_dual_feasibility"] = inner_info["min_dual_feasibility"]
-                solver_status["complementarity"] = inner_info["complementarity"]
-                solver_status["mineigval_TRS_quadratic"] = inner_info["mineigval_TRS_quadratic"]
+                solver_status["minxfeasi"] = inner_info["minxfeasi"]
+                solver_status["minyfeasi"] = inner_info["minyfeasi"]
+                solver_status["compl"] = inner_info["compl"]
+                solver_status["mineigvalHw"] = inner_info["mineigvalHw"]
                 solver_status["ared/pred"] = inner_info["ared/pred"]
                 solver_status["radius_update"] = inner_info["radius_update"]
                 solver_status["dual_clipping"] = inner_info["dual_clipping"]
             else:
                 solver_status["dxtype"] = None
                 solver_status["normdx"] = None
-                solver_status["min_primal_feasibility"] = None
-                solver_status["min_dual_feasibility"] = None
-                solver_status["complementarity"] = None
-                solver_status["mineigval_TRS_quadratic"] = None
+                solver_status["minxfeasi"] = None
+                solver_status["minyfeasi"] = None
+                solver_status["compl"] = None
+                solver_status["mineigvalHw"] = None
                 solver_status["ared/pred"] = None
                 solver_status["radius_update"] = None
                 solver_status["dual_clipping"] = None
 
         maxabsLagmult = float('-inf')
-        if ineqconstraints.has_constraint:
-            for Lagmult in yCur:
-                maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
+        for Lagmult in yCur:
+            maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../NonnegPCA/", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA

@@ -8,23 +8,29 @@ import sys
 sys.path.append('./src/base')
 import problem_coordinator
 
-@dataclass
-class Constraints:
-    has_constraint: bool = False  # whether having a type of constraints or not
-    num_constraint: int = 0  # the number of constraints. must be compatible with the length of 'constraint' list
-    constraint: list = field(default_factory=list)
+sys.path.append('./src/solver')
+import utils
 
-@dataclass
-class ManifoldConstraints(Constraints):
-    type: list = field(default_factory=list)
+# from coordinator import Coordinator
 
-@dataclass
-class Problem(problem_coordinator.BaseProblem):
-    # initialineqLagmult: field(default_factory=list)
-    # initialeqLagmult: field(default_factory=list)
-    eqconstraints: Constraints
-    ineqconstraints: Constraints
-    maniconstraints: ManifoldConstraints
+# @dataclass
+# class Constraints:
+#     has_constraint: bool = False  # whether having a type of constraints or not
+#     num_constraint: int = 0  # the number of constraints. must be compatible with the length of 'constraint' list
+#     constraint: list = field(default_factory=list)
+
+# @dataclass
+# class ManifoldConstraints:
+#     constraints: list = field(default_factory=list)
+#     type: list = field(default_factory=list)
+
+# @dataclass
+# class Problem(problem_coordinator.BaseProblem):
+#     # initialineqLagmult: field(default_factory=list)
+#     # initialeqLagmult: field(default_factory=list)
+#     eqconstraints: Constraints
+#     ineqconstraints: Constraints
+#     maniconstraints: ManifoldConstraints
 
 
 # Problem coordinator for nonnegative principal component analysis
@@ -38,14 +44,21 @@ class Coordinator(problem_coordinator.Coordinator):
         # initialineqLagmult = self.set_initialineqLagmult()
         # initialeqLagmult = self.set_initialeqLagmult()
         maniconstraints = self.set_maniconstraints()
-        problem = Problem(costfun=costfun,
-                          ineqconstraints=ineqconstraints,
-                          eqconstraints=eqconstraints,
-                          maniconstraints=maniconstraints,
-                          initialpoint=initialpoint,
-                          # initialineqLagmult=initialineqLagmult,
-                          # initialeqLagmult=initialeqLagmult
-                          )
+        problem = utils.EuclideanNonlinearProblem(
+            cost = costfun,
+            ineqconstraints = ineqconstraints,
+            eqconstraints = eqconstraints,
+            initialpoint = initialpoint,
+            maniconstraints = maniconstraints
+        )
+        # problem = Problem(costfun=costfun,
+        #                   ineqconstraints=ineqconstraints,
+        #                   eqconstraints=eqconstraints,
+        #                   maniconstraints=maniconstraints,
+        #                   initialpoint=initialpoint,
+        #                   # initialineqLagmult=initialineqLagmult,
+        #                   # initialeqLagmult=initialeqLagmult
+        #                   )
         return problem
 
     # Set an inner product of x and the vectorized C as a cost function
@@ -84,10 +97,11 @@ class Coordinator(problem_coordinator.Coordinator):
                 nonnegfun = build_nonnegfun(row, col, cdim)
                 constraint.append(nonnegfun)
 
-        ineqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
-                                      num_constraint = rdim * cdim,
-                                      constraint = constraint)
-        return ineqconstraints
+        # ineqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
+        #                               num_constraint = rdim * cdim,
+        #                               constraint = constraint)
+        # return ineqconstraints
+        return constraint
 
     # Set the unit norm constraint on the product of X and V as an equality function
     def set_eqconstraints(self):
@@ -114,10 +128,11 @@ class Coordinator(problem_coordinator.Coordinator):
         fun = build_eqfun(V, rdim, cdim)
         constraint = [fun]
 
-        eqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
-                                      num_constraint = 1 if rdim > 0 and cdim > 0 else 0,
-                                      constraint = constraint)
-        return eqconstraints
+        # eqconstraints = Constraints(has_constraint = True if rdim > 0 and cdim > 0 else False,
+        #                               num_constraint = 1 if rdim > 0 and cdim > 0 else 0,
+        #                               constraint = constraint)
+        # return eqconstraints
+        return constraint
 
     # Set nonlinear constraints that originally form a manifold
     def set_maniconstraints(self):
@@ -142,10 +157,7 @@ class Coordinator(problem_coordinator.Coordinator):
             constraint.append(nonnegfun)
         type = ['eq'] * cdim
 
-        manifoldconstraints = ManifoldConstraints(has_constraint = True if rdim > 0 else False,
-                                      num_constraint = cdim,
-                                      constraint = constraint,
-                                      type = type)
+        manifoldconstraints = utils.ManifoldConstraints(constraints = constraint, type = type)
         return manifoldconstraints
 
     # Set initial points with initial Lagrange multipliers
