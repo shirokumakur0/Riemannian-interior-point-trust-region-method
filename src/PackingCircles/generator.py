@@ -49,7 +49,7 @@ class InitialPointGenerator(dataset_generator.Generator):
             setattr(data, f'initUV_{initpt}', UV)
             s = 0.5 * np.ones(N)
             setattr(data, f'inits_{initpt}', s)
-        data.r_scale = [[0.5]]
+        data.r_scale = [[0.9]]
 
         return data
 

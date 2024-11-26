@@ -16,6 +16,8 @@ import sys
 sys.path.append('./src/base')
 from base_solver import Solver
 
+
+# np.__config__.show()
 # import warnings
 # import traceback
 
@@ -66,7 +68,6 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
                     return None, None, "solve failed"
     else:
         p1 = scipy.linalg.solve(A, -a, assume_a='sym')
-    
     if np.linalg.norm(A @ p1 + a) / np.linalg.norm(a) < 1e-5:
         if p1 @ B @ p1 >= Del**2:  # outside of the trust region
             p1 = np.full_like(p1, np.nan)  # ineligible
@@ -74,31 +75,42 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
         p1 = np.full_like(p1, np.nan)
 
     # Core of the code: generalized eigenproblem
+    
+    # MM0_norm = scipy.linalg.norm(MM0, ord=2)
+    # MM1_norm = scipy.linalg.norm(MM1, ord=2)
+    # print(MM0_norm, MM1_norm)
+    # print("cond", np.linalg.cond(MM0), np.linalg.cond(MM1))
     if exit_warning_triggered:
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
             lams, vecs = scipy.linalg.eig(a=MM0, b=-MM1)
+            # lams, vecs = scipy.linalg.eig(a=MM0/MM0_norm, b=-MM1/MM1_norm)
             for warning in caught_warnings:
                 if issubclass(warning.category, scipy.linalg.LinAlgWarning):
                     # print(warning.message)
                     return None, None, "eig failed"
     else:
         lams, vecs = scipy.linalg.eig(a=MM0, b=-MM1)
+        # lams, vecs = scipy.linalg.eig(a=MM0/MM0_norm, b=-MM1/MM1_norm)
+    # print("before", lams)
+    # lams = lams * MM0_norm / MM1_norm
+    # print("after", lams)
     rmidx = np.argmax(np.real(lams))
     lam1 = np.real(lams[rmidx])  # rightmost eigenvalue
     V = vecs[:, rmidx]  # corresponding rightmost eigenvector
-    V = np.real(V) if np.linalg.norm(np.real(V)) >= 1e-3 else np.imag(V)  # sometimes complex
+    
+    # print("resid", np.linalg.norm(MM0 @ V + MM1 @ V * lam1))
+    # print("lam1, V", lam1, V, np.linalg.norm(np.real(V)) >= 1e-3)
+    V = np.real(V) # if np.linalg.norm(np.real(V)) >= 1e-3 else np.imag(V)  # sometimes complex
     x = V[:n]  # extract solution component
     normx = np.sqrt(x @ (B @ x))
     x = x / normx * Del  # in the easy case, this naive normalization improves accuracy
     if x @ a > 0:
         x = -x  # take correct sign
     type = "boundary"
-
     if normx < tolhardcase:  # enter hard case
         x1 = V[n:]
-        alpha1 = copy.deepcopy(lam1) 
-        """↑ ここあとでcopy外す"""
+        alpha1 = lam1 # copy.deepcopy(lam1) 
         Pvect = x1  # first try only k=1, almost always enough
         Alam1B = A + lam1 * B
         BPvecti = B @ Pvect
@@ -114,6 +126,7 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
         else:
             x2 = scipy.linalg.solve(H, -a, assume_a='sym')
         type = "hardcase_1"
+
         # Residual check for hard case refinement
         if np.linalg.norm(Alam1B @ x2 + a) / np.linalg.norm(a) > tolhardcase:
             if exit_warning_triggered:
@@ -126,6 +139,7 @@ def TRSgep(A, a, B, Del, tolhardcase=1e-4, exit_warning_triggered=False):
                             return None, None, "eig failed"
             else:
                 _, v = scipy.linalg.eigh(A, B)  # ascending order
+
             for ii in [3,6,9]:  # Iteratively refine solution if needed
                 Pvect = v[:,:ii]  # Slices returns only the portion within the actual size of the array if the specified range exceeds the bounds.
                 BPvecti = B @ Pvect
@@ -218,7 +232,7 @@ class RIPTRM(Solver):
             'maxiter': 100,
             'tolresid': 1e-6,
             'inner_maxiter': None,
-            'inner_maxtime': None,
+            'inner_maxtime': 120,
 
             # Inner iteration setting
             'initial_TR_radius': None,
@@ -236,9 +250,9 @@ class RIPTRM(Solver):
             'exit_warning_triggered': False,
             'checkTRSoptimality': False,
             'initial_barrier_parameter': 0.1,
-            'barrier_parameter_update_r': 0.4, # 0.8,
-            'barrier_parameter_update_c': 0.4, #0.8,
-            'const_left': 1e-16, # 0.5,
+            'barrier_parameter_update_r': 0.8, # 0.8,
+            'barrier_parameter_update_c': 0.8, #0.8,
+            'const_left': 0.5,
             'const_right': 1e+20,
             'basisfun': lambda manifold, x: tangentorthobasis(manifold, x, manifold.dim),
             
@@ -349,7 +363,7 @@ class RIPTRM(Solver):
         else:
             sol, _ = scipy.sparse.linalg.lgmres(A, b, rtol=tol)
         return sol
-        
+
     def MM0fun(self, x, y, tgtfun, reshapefun, vecfun, n, Afun, Bfun, g, Delta, manifold):
         x1 = tgtfun(reshapefun(x[:n]))
         x2 = tgtfun(reshapefun(x[n:]))
@@ -367,7 +381,7 @@ class RIPTRM(Solver):
         y1 = vecfun(tgtfun(y1))
         y2 = vecfun(tgtfun(y2))
         y[:] = np.concatenate([y1, y2])
-    
+
     def TRSgep_matrixfree(self, A, a, B, Del, x, manifold, tolresid, tolhardcase=1e-4, exit_warning_triggered=False):
         """
         Solves the trust-region subproblem by a generalized eigenproblem without iterations.
@@ -431,7 +445,6 @@ class RIPTRM(Solver):
         type = "boundary"
 
         if normv < tolhardcase:  # enter hard case
-            print("enter hard case, consinder debug chance! rare case!")
             x1 = np.real(tgtfun(reshapefun(V[n:])))
             Pvect = x1  # first try only k=1, almost always enough
             alpha1 = copy.deepcopy(lam1)
@@ -448,9 +461,7 @@ class RIPTRM(Solver):
             type = "hardcase_1"
 
             # Residual check for hard case refinement
-            """tolhardcase緩めてprintデバッグしまくったほうが良い"""
             if manifold.norm(x, Alam1B(x2) + a) / manifold.norm(x, a) > tolhardcase:
-                print("hardcase")
                 maxii = min(dim, 9)
                 lambdaA = lambda x, y: basefun(x, y, A, tgtfun, reshapefun, vecfun)
                 lambdaB = lambda x, y: basefun(x, y, B, tgtfun, reshapefun, vecfun)
@@ -464,6 +475,7 @@ class RIPTRM(Solver):
                     alpha1Bpvecti2= lambda vec: alpha1 * np.sum([manifold.inner_product(x, BPvect, tgtfun(reshapefun(vec))) * BPvect for BPvect in BPvects], axis=0)
                     H = scipy.sparse.linalg.LinearOperator((n, n), matvec=lambda vec: Alam1B(vec) + alpha1Bpvecti2(vec))
                     x2 = self.solve_linear_equations(H, -avec, tolhardcase, exit_warning_triggered)
+
                     if x2 is None:
                         return None, None, "solve failed"
                     x2 = np.real(tgtfun(reshapefun(x2)))
@@ -618,7 +630,11 @@ class RIPTRM(Solver):
                 costprint = "{:.3e}".format(costfun(xCur))
                 KKTresidprint = "{:.3e}".format(normgradLagfun)
                 TRradiusprint = "{:.3e}".format(TR_radius)
-                print(f"Iteration: {outer_iteration}-{inner_iteration}, Cost: {costprint}, KKT resid: {KKTresidprint}, TR_radius: {TRradiusprint}, Status: {inner_status}")
+                if "inner_info" in locals():
+                    dxtype = inner_info["dxtype"]
+                else:
+                    dxtype = "initial"
+                print(f"Iter: {outer_iteration}-{inner_iteration}, Cost: {costprint}, KKT resid: {KKTresidprint}, TR: {TRradiusprint}, Dir: {dxtype}, Stat: {inner_status}")
             inner_iteration += 1
 
             # Set initial inner_info
@@ -672,7 +688,7 @@ class RIPTRM(Solver):
 
             # Check TRS optimality
             if checkTRSoptimality:
-                self.check_TRS_optimality(self, xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold)
+                self.check_TRS_optimality(xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold)
 
             # Update x and y
             dyCur = - yCur + mu * (1 / costineqconstvecxCur) - yCur * GxajCur(dxCur) / costineqconstvecxCur
