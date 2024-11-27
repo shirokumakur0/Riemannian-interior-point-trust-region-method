@@ -50,9 +50,9 @@ class RSQO(Solver):
             'quadoptim_eigvalcorr': 1e-8,
             'quadoptim_eigvalthld': 1e-5,
             'quadoptim_maxiter': 400,
-            'quadoptim_abstol': 1e-16,
-            'quadoptim_reltol': 1e-16,
-            'quadoptim_feastol': 1e-16,
+            'quadoptim_abstol': 1e-12,
+            'quadoptim_reltol': 1e-12,
+            'quadoptim_feastol': 1e-12,
 
             'quadoptim_basisfun': lambda manifold, x, dim: tangentorthobasis(manifold, x, dim),
 
@@ -131,9 +131,9 @@ class RSQO(Solver):
         hesseqconstraints = problem.eqconstraints_riemannian_hessian_all
 
         # Set initial points
-        xCur = problem.initialpoint
-        ineqLagCur = problem.initialineqLagmult
-        eqLagCur = problem.initialeqLagmult
+        xCur = copy.deepcopy(problem.initialpoint)
+        ineqLagCur = copy.deepcopy(problem.initialineqLagmult)
+        eqLagCur = copy.deepcopy(problem.initialeqLagmult)
         xPrev = copy.deepcopy(xCur)
         iteration = 0
         start_time = time.time()

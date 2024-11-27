@@ -40,3 +40,9 @@
 [2024-11-26 00:32:29,556][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.NabGenerator'> -- instance: 2
 [2024-11-26 00:32:29,558][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 2
 [2024-11-26 00:32:29,574][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 2
+[2024-11-26 22:35:46,097][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.NabGenerator'> -- instance: 2
+[2024-11-26 22:35:46,099][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 2
+[2024-11-26 22:35:46,143][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 2
+[2024-11-26 22:39:52,583][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.NabGenerator'> -- instance: 2
+[2024-11-26 22:39:52,586][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 2
+[2024-11-26 22:39:52,621][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 2

@@ -636,16 +636,16 @@ class RIPM(Solver):
         verbosity = option["verbosity"]
 
         # Set initial points
-        xCur = problem.initialpoint
-        yCur = problem.initialeqLagmult
+        xCur = copy.deepcopy(problem.initialpoint)
+        yCur = copy.deepcopy(problem.initialeqLagmult)
         # ineqnum = ineqconstraints.num_constraint
         if heuristic_z_s:
             zCur = np.ones(num_ineqconstraints)
             zCur[0] =np.real(np.sqrt((num_ineqconstraints - 1)/(num_ineqconstraints/desired_tau_1 - 1)))
             sCur = important * zCur
         else:
-            zCur = problem.initialineqLagmult
-            sCur = problem.initialineqLagmult
+            zCur = copy.deepcopy(problem.initialineqLagmult)
+            sCur = copy.deepcopy(problem.initialineqLagmult)
         xPrev = copy.deepcopy(xCur)
         iteration = 0
 

@@ -137,9 +137,9 @@ class RALM(Solver):
         """
         
         # Set initial points
-        xCur = problem.initialpoint
-        ineqLagCur = problem.initialineqLagmult
-        eqLagCur = problem.initialeqLagmult
+        xCur = copy.deepcopy(problem.initialpoint)
+        ineqLagCur = copy.deepcopy(problem.initialineqLagmult)
+        eqLagCur = copy.deepcopy(problem.initialeqLagmult)
         xPrev = copy.deepcopy(xCur)
         OuterIteration = 0
         start_time = time.time()

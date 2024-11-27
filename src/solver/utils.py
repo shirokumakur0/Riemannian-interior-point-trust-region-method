@@ -235,7 +235,6 @@ def vectorizefun(manifold, x, tgtvec):
     else:
         return tgtvec.reshape(-1)
 
-
 def compute_maxmeanviolations(problem, x):
     # Setting
     ineqconstraints = problem.ineqconstraints_all
@@ -585,6 +584,7 @@ def operator2matrix(Mx, x, y, F, Bx=None, By=None, My=None):
         A[:, j] = tangent2vec(My, y, By, FBxj)
     return A
 
+# @profile
 def selfadj_operator2matrix(M, x, F, Bx):
     n = len(Bx)
     A_mat = np.zeros((n, n))

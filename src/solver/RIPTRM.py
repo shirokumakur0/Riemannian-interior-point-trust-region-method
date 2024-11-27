@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from utils import  tangentorthobasis, evaluation, tgtvecshapefun, vectorizefun, selfadj_operator2matrix, Output
 import warnings
 import scipy
+import cProfile
 
 import sys, slepc4py
 slepc4py.init(sys.argv)
@@ -200,6 +201,25 @@ def PETSc_solve(n, eignum, Afun, Bfun=None, tol=1e-12, maxiter=1000, eigval_type
     xr, _ = PETSc_A.getVecs()
     xi, _ = PETSc_A.getVecs()
     
+    ksp = PETSc.KSP().create()
+    ksp.setType('preonly')  # 前処理のみ（直接法）
+    pc = ksp.getPC()
+    pc.setType('lu')  # LU分解を指定
+    pc.setFactorSolverType('mumps')  # MUMPSソルバーを指定
+    
+    E = SLEPc.EPS().create()
+    E.setOperators(PETSc_A, PETSc_B)
+    E.setDimensions(3,PETSc.DECIDE)
+    E.setProblemType(SLEPc.EPS.ProblemType.GHEP)
+    # E.setFromOptions()
+    E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
+    # Solve the eigensystem
+    E.solve()
+    
+    
+    
+    
+    """
     E = SLEPc.EPS().create()
     E.setTolerances(tol, maxiter)
     if Bfun is not None:
@@ -220,6 +240,7 @@ def PETSc_solve(n, eignum, Afun, Bfun=None, tol=1e-12, maxiter=1000, eigval_type
     pc = ksp.getPC()
     pc.setType("none")  # No preconditioner
     E.solve()
+    """
     return E, xr, xi
 
 # Riemannian interior point trust region method
@@ -236,22 +257,24 @@ class RIPTRM(Solver):
 
             # Inner iteration setting
             'initial_TR_radius': None,
+            'minimal_initial_TR_radius': 1e-15,
             'maximal_TR_radius': 10,
-            'rho': 0.2,  # threshold for the acceptance of the trial point
+            'rho': 0.1,  # threshold for the acceptance of the trial point
+            'reduction_regularization': 1e3,
             'gamma': 0.25,  # the factor to shrink the trust region radius if the primal point is infeasible
             'forcing_function_Lagrangian': lambda mu: mu,
             'forcing_function_complementarity': lambda mu: mu,
             'forcing_function_second_order': lambda mu: 100 * mu,
             'min_barrier_parameter': 1e-15,
-            'TRS_solver': 'Exact_RepMat',  # 'Exact_RepMat', 'Exact_Operator', or 'Cauchy'
-            'second_order_stationarity': True,
+            'TRS_solver': 'Exact_Operator',  # 'Exact_RepMat', 'Exact_Operator', or 'Cauchy'
+            'second_order_stationarity': False,
             'TRS_tolresid': 1e-12,
             'TRS_tolhardcase': 1e-8,
             'exit_warning_triggered': False,
             'checkTRSoptimality': False,
             'initial_barrier_parameter': 0.1,
-            'barrier_parameter_update_r': 0.8, # 0.8,
-            'barrier_parameter_update_c': 0.8, #0.8,
+            'barrier_parameter_update_r': 0.01, # 0.8,
+            'barrier_parameter_update_c': 0.2, #0.8,
             'const_left': 0.5,
             'const_right': 1e+20,
             'basisfun': lambda manifold, x: tangentorthobasis(manifold, x, manifold.dim),
@@ -279,39 +302,6 @@ class RIPTRM(Solver):
             _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
                              name = f"RIPTRM_{self.option['TRS_solver']}",  # the name of the run
                              config=self.option)  # save hyperparameters and metadata
-
-    def set_inner_option(self, option):
-        inner_option = {}
-        inner_option["second_order_stationarity"] = option["second_order_stationarity"]
-        inner_option["TRS_solver"] = option['TRS_solver']
-        inner_option["gamma"] = option['gamma']
-        inner_option["maximal_TR_radius"] = option['maximal_TR_radius']
-        inner_option["inner_maxiter"] = option['inner_maxiter']
-        inner_option["inner_maxtime"] = option['inner_maxtime']
-        inner_option["rho"] = option['rho']
-        inner_option["const_left"] = option['const_left']
-        inner_option["const_right"] =  option['const_right']
-        inner_option["save_inner_iteration"] = ["save_inner_iteration"]
-        inner_option["exit_warning_triggered"] = option['exit_warning_triggered']
-        inner_option["TRS_tolhardcase"] = option['TRS_tolhardcase']
-        inner_option["checkTRSoptimality"] = option['checkTRSoptimality']
-        inner_option["exit_warning_triggered"] = option['exit_warning_triggered']
-        inner_option["TRS_tolhardcase"] = option['TRS_tolhardcase']
-        inner_option["TRS_tolresid"] = option['TRS_tolresid']
-        inner_option["checkTRSoptimality"] = option['checkTRSoptimality']
-        inner_option["exit_warning_triggered"] = option['exit_warning_triggered']
-        inner_option["TRS_tolhardcase"] = option['TRS_tolhardcase']
-        inner_option["checkTRSoptimality"] = option['checkTRSoptimality']
-        inner_option["verbosity"] = option["verbosity"]
-        inner_option["basisfun"] = option["basisfun"]
-        inner_option["save_inner_iteration"] = option["save_inner_iteration"]
-        inner_option["manviofun"] = option["manviofun"]
-        inner_option["callbackfun"] = option["callbackfun"]
-        inner_option["stopping_criterion_Lagrangian"] = None
-        inner_option["stopping_criterion_complementarity"] = None
-        if inner_option["second_order_stationarity"]:
-            inner_option["stopping_criterion_second_order"] = None
-        return inner_option
 
     def check_TRS_optimality(self, xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold):
         basisfun = self.option["basisfun"]
@@ -382,6 +372,7 @@ class RIPTRM(Solver):
         y2 = vecfun(tgtfun(y2))
         y[:] = np.concatenate([y1, y2])
 
+    # @profile
     def TRSgep_matrixfree(self, A, a, B, Del, x, manifold, tolresid, tolhardcase=1e-4, exit_warning_triggered=False):
         """
         Solves the trust-region subproblem by a generalized eigenproblem without iterations.
@@ -528,6 +519,7 @@ class RIPTRM(Solver):
         inner_info["dual_clipping"] = None
         return inner_info
 
+    # @profile
     def inner_iteration(self, problem, outer_iteration, outer_start_time, x_initial, y_initial, mu, initial_TR_radius, inner_option):
         # Set parameters
         stopping_criterion_Lagrangian = inner_option["stopping_criterion_Lagrangian"]
@@ -537,6 +529,7 @@ class RIPTRM(Solver):
             stopping_criterion_second_order = inner_option["stopping_criterion_second_order"]
         TRS_solver = self.option["TRS_solver"]
         gamma = self.option["gamma"]
+        reduction_regularization = self.option["reduction_regularization"]
         maximal_TR_radius = self.option["maximal_TR_radius"]
         inner_maxiter = self.option["inner_maxiter"]
         inner_maxtime = self.option["inner_maxtime"]
@@ -743,7 +736,6 @@ class RIPTRM(Solver):
                 inner_info["inner_status"] = inner_status
                 return xNew, yNew, TR_radius, inner_info, inner_xPrev
 
-            # 
             normdxCur = manifold.norm(xCur, dxCur)
             if not xfeasi_criterion:
                 inner_status = "primal_infeasible"
@@ -759,11 +751,13 @@ class RIPTRM(Solver):
                             )
                     self.add_log(outer_iteration, outer_start_time, eval_log, solver_log)
                 continue
-
-            ared = logbarrfun(xCur, mu, costfunx=costxCur, costineqconstvecx=costineqconstvecxCur) - logbarrfun(xNew, mu, costfunx=costxNew, costineqconstvecx=costineqconstvecxNew)
+            logbarrxCur = logbarrfun(xCur, mu, costfunx=costxCur, costineqconstvecx=costineqconstvecxCur)
+            logbarrxNew = logbarrfun(xNew, mu, costfunx=costxNew, costineqconstvecx=costineqconstvecxNew)
+            ared =  logbarrxCur - logbarrxNew
             pred = 0 - 0.5 * manifold.inner_product(xCur, HwCur(dxCur), dxCur) - manifold.inner_product(xCur, cxCur, dxCur)
-            # inner_info["ared"] = ared
-            # inner_info["pred"] = pred
+            red_reg = max(1, abs(logbarrxCur)) * np.spacing(1) * reduction_regularization
+            ared = ared + red_reg
+            pred = pred + red_reg
             inner_info["ared/pred"] = ared / pred
             if ared < 0.25 * pred:
                 inner_info["radius_update"] = "reduced"
@@ -806,6 +800,7 @@ class RIPTRM(Solver):
             inner_xPrev = copy.deepcopy(xCur)
 
     # Running an experiment
+    # @profile
     def run(self, problem):
         if problem.has_eqconstraints:
             warnings.warn("Equality constraints detecred. Currently, RIPTRM does not support equality constraints and will completely ignore them.", Warning)
@@ -813,8 +808,8 @@ class RIPTRM(Solver):
         # Set initial points
         option = self.option
         costfun = problem.cost
-        xCur = problem.initialpoint
-        yCur = problem.initialineqLagmult
+        xCur = copy.deepcopy(problem.initialpoint)
+        yCur = copy.deepcopy(problem.initialineqLagmult)
         muCur = option["initial_barrier_parameter"]
         xPrev = copy.deepcopy(xCur)
         iteration = 0
@@ -835,6 +830,7 @@ class RIPTRM(Solver):
         forcing_function_Lagrangian = option['forcing_function_Lagrangian']
         forcing_function_complementarity = option['forcing_function_complementarity']
         forcing_function_second_order = option['forcing_function_second_order']
+        minimal_initial_TR_radius = self.option["minimal_initial_TR_radius"]
         min_barrier_parameter = option['min_barrier_parameter']
         barrier_parameter_update_r = option['barrier_parameter_update_r']
         barrier_parameter_update_c = option['barrier_parameter_update_c']
@@ -859,9 +855,6 @@ class RIPTRM(Solver):
         residual_criterion = (residual <= tolresid, "KKT residual tolerance reached; current residual=" + str(residual) + " and tolresid=" + str(tolresid))
         stopping_criteria =[residual_criterion]
 
-        # Set the inner option
-        inner_option = self.set_inner_option(option)
-
         # Outer iteration
         while True:
             if verbosity == 1:
@@ -879,17 +872,22 @@ class RIPTRM(Solver):
 
             # Update the inner option (part 2)
             inner_option = {}
-            inner_option["stopping_criterion_Lagrangian"] = forcing_function_Lagrangian(muCur)
-            inner_option["stopping_criterion_complementarity"] = forcing_function_complementarity(muCur)
+            inner_option["stopping_criterion_Lagrangian"] = muCur
+            inner_option["stopping_criterion_complementarity"] = muCur
             if second_order_stationarity:
                 inner_option["stopping_criterion_second_order"] = forcing_function_second_order(muCur)
+            # inner_option["stopping_criterion_Lagrangian"] = forcing_function_Lagrangian(muCur)
+            # inner_option["stopping_criterion_complementarity"] = forcing_function_complementarity(muCur)
+            # if second_order_stationarity:
+            #     inner_option["stopping_criterion_second_order"] = forcing_function_second_order(muCur)
 
-            xNew, yNew, _, inner_info, inner_xPrev = self.inner_iteration(problem, iteration, start_time, xCur, yCur, muCur, initial_TR_radius, inner_option)
+            xNew, yNew, TR_radius, inner_info, inner_xPrev = self.inner_iteration(problem, iteration, start_time, xCur, yCur, muCur, initial_TR_radius, inner_option)
 
             # Update variables
             xCur = copy.deepcopy(xNew)
             yCur = copy.deepcopy(yNew)
             muCur = max(min_barrier_parameter, barrier_parameter_update_c * (muCur ** (1 + barrier_parameter_update_r)))
+            initial_TR_radius = max(TR_radius, minimal_initial_TR_radius)
             # Set evalxPrev only for evaluation if necessary
             evalxPrev = inner_xPrev if save_inner_iteration or inner_info["inner_status"] != "converged" else xPrev
             # Evaluation and logging
@@ -967,11 +965,11 @@ class RIPTRM(Solver):
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../NonnegPCA/", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/NonnegPCA')
+    sys.path.append('./src/PackingCircles')
     import coordinator
 
     # Call a problem coordinator
@@ -988,7 +986,8 @@ def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
     # Run the experiment
     riptrmsolver = RIPTRM(option)
     output = riptrmsolver.run(problem)
-    print(output)
+    # print(output)
 
 if __name__=='__main__':
     main()
+    # cProfile.run("main()", sort="tottime")
