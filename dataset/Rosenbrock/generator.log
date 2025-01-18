@@ -1,0 +1,10 @@
+[2024-12-17 12:35:47,268][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:12:16,302][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:12:16,305][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 1
+[2024-12-18 05:12:32,810][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:12:32,813][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 1
+[2024-12-18 05:24:29,829][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:24:48,673][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:24:48,676][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 1
+[2024-12-18 05:26:29,098][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialPointGenerator'> -- instance: 1
+[2024-12-18 05:26:29,101][dataset_generator][INFO] - Running a dataset generator of class <class '__main__.InitialIneqLagMultGenerator'> -- instance: 1

@@ -250,7 +250,8 @@ class EuclideanIPTRM(Solver):
         eqLagmult = np.concatenate(v[self.ineqnum:self.ineqnum+self.eqnum]) if self.eqnum > 0 else np.array([])
         maniLagmult = np.concatenate(v[self.ineqnum+self.eqnum:]) if self.maninum > 0 else np.array([])
         
-        output = Output(x=xCur,
+        output = Output(name="EuclideanIPTRM",
+                        x=xCur,
                         ineqLagmult=ineqLagmult,
                         eqLagmult=eqLagmult,
                         maniLagmult=maniLagmult,

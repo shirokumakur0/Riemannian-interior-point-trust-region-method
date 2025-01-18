@@ -113,8 +113,8 @@ class Coordinator(problem_coordinator.Coordinator):
         b = int(np.loadtxt(path))
 
         mani = self.mani
-        ba2 = b/a**2
-        ba4 = b/a**4
+        ba2 = (b/a)**2
+        ba4 = (b/a)**4
         # pymanopt_problem = pymanopt.Problem(mani, None)
         
         def indexdecorated_interiorconstfun(idx, ba4):
@@ -224,8 +224,8 @@ class Coordinator(problem_coordinator.Coordinator):
         path = f'{dataset_path}/b.csv'
         b = int(np.loadtxt(path))
 
-        ba2 = b/a**2
-        ba4 = b/a**4
+        ba2 = (b/a)**2
+        ba4 = (b/a)**4
 
         minval = np.inf
         for i in range(N):
@@ -249,10 +249,7 @@ class Coordinator(problem_coordinator.Coordinator):
                 minval = min(minval, val)
         assert minval > 0, f"error: minval = {minval}"
         r = np.array([minval * r_scale])
-
         initialpoint = [r, initUV, s]
-            
-        
         return initialpoint
 
 @hydra.main(version_base=None, config_path=".", config_name="config_simulation")

@@ -1,0 +1,56 @@
+# This is a configuration file for dataset generation.
+# The file will be passed to instances of a series of Generator() in which
+# data are generated according to the setting in this configuration file.
+
+# Tutorial for your project:
+# 1. Before making any edits to this file, make sure to change the root folder name
+#    from 'template' to match your project's name.
+# 2. Edit the hyperparameters that will be used in dataset generation.
+# 3. Update the 'project_name' variable to match the actual name of your project.
+# 4. Adjust the 'instance_name' and 'initialpoints' as needed for your specific use case.
+# 5. If you plan to use multi-run functionality during dataset generation,
+#    modify the 'hydra-sweeper-params' to indicate the appropriate range for multi-run.
+#
+# Next, please proceed to the 'generator.py' file.
+
+# Hyperparameters
+N: 20
+oneboxratio: 0.2
+twoboxratio: 0.1
+dim: 5
+snr: 10
+h: 0.02
+Xset: [1,2,3,4,5]
+scaling: 1 # 1  # 5e-2
+interior_scaling: 0.95
+init_type: "interior" # "interior", "interior"
+
+solver_option:
+    # Common settings: stopping criteria and wandb setting
+    common:
+      maxtime: 100  # max time of experiments as a stopping criterion
+      maxiter: 4 # 4  # max iteration as a stopping criterion
+      tolresid: 1e-2  # 1e-2  # tolerance of residual based on KKT conditions as a stopping criterion
+      verbosity: 1
+      # wandb_logging: False  # Set True for sending the experimental results to wandb
+      # wandb_project: ${problem_name}-${problem_instance}-${problem_initialpoint}  # project name in wandb
+    # Settings specific to each solver
+    # RALM:
+    #   rho: 0.1
+
+# Setting for data generation.
+problem_name: 'StableIdentification'
+instance_name: 1  # can be swept by multi-run
+initialpoints: ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t"]  # the list of initial points' names.
+output_path: dataset/${problem_name}/${instance_name}
+### NOTE ###
+# Data folders are created as 'dataset/${problem_name}/${instance_name}'.
+# Initial points are stored in each ${instance_name} folder.
+
+# Sweep settings
+hydra:
+  run:
+    dir: dataset/${problem_name}
+  sweeper:
+    params:
+      instance_name: 1,2,3

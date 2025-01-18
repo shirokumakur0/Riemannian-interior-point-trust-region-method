@@ -14,13 +14,13 @@
 # Next, please proceed to the 'generator.py' file.
 
 # Hyperparameters
-N: 10
+N: 7
 a: 2  # a>= b
 b: 1
 
 # Setting for data generation.
 problem_name: 'PackingCircles'
-instance_name: 2  # can be swept by multi-run
+instance_name: 1  # can be swept by multi-run
 initialpoints: ["a","b","c"]  # the list of initial points' names.
 output_path: dataset/${problem_name}/${instance_name}
 ### NOTE ###

@@ -1,0 +1,21 @@
+# # version: '3'
+# services:
+#   simulation:
+#     restart: always
+#     build: .
+#     container_name: 'simulation'
+#     working_dir: '/Users/mitsuaki_obara/Library/CloudStorage/GoogleDrive-obara-mitsuaki679@g.ecc.u-tokyo.ac.jp/マイドライブ/Codes/RIPTRM'
+#     tty: true
+#     volumes:
+#       - /Users/mitsuaki_obara/Library/CloudStorage/GoogleDrive-obara-mitsuaki679@g.ecc.u-tokyo.ac.jp/マイドライブ/Codes/RIPTRM:/Users/mitsuaki_obara/Library/CloudStorage/GoogleDrive-obara-mitsuaki679@g.ecc.u-tokyo.ac.jp/マイドライブ/Codes/RIPTRM
+
+# version: '3'
+services:
+  simulation:
+    restart: always
+    build: .
+    container_name: 'simulation'
+    working_dir: /app  # コンテナ内の作業ディレクトリ
+    tty: true
+    volumes:
+      - .:/app  # カレントディレクトリをコンテナ内の /app にマウント

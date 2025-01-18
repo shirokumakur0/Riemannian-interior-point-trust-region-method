@@ -6,7 +6,6 @@ from scipy.linalg import eig
 from dataclasses import dataclass, field
 from typing import Any
 
-
 import sys
 sys.path.append('./src/base')
 from base_solver import BaseOutput
@@ -300,6 +299,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
             ineqcstrfun = ineqconstraints[idx]
             violation = ineqLagmult[idx] * ineqcstrfun(x)
             squared_complvio += violation ** 2
+    complvio = np.sqrt(squared_complvio)
 
     # Compute violation of the nonnegativity condition for Lagrange multipliers for inequality
     squared_nonnegvio = 0
@@ -307,6 +307,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
         for valLag in ineqLagmult:
             violation = max(-valLag, 0)
             squared_nonnegvio += violation ** 2
+    nonnegvio = np.sqrt(squared_nonnegvio)
 
     # Compute the errors of inequality/equality constraints
     squared_ineqvio = 0
@@ -336,7 +337,7 @@ def compute_residual(problem, x, ineqLagmult, eqLagmult, manviofun):
                         + squared_manvio
                         )
 
-    return residual, gradnorm
+    return residual, gradnorm, complvio, nonnegvio, manvio
 
 def evaluation(problem, xPrev, xCur, ineqLagmult, eqLagmult, manviofun, callbackfun):
     # Cost evaluation
@@ -348,7 +349,7 @@ def evaluation(problem, xPrev, xCur, ineqLagmult, eqLagmult, manviofun, callback
     dist = manifold.dist(xPrev, xCur)
 
     # residial of KKT conditions with manifold violation
-    residual, gradnorm = compute_residual(problem, xCur, ineqLagmult, eqLagmult, manviofun)
+    residual, gradnorm, complvio, nonnegvio, manvio = compute_residual(problem, xCur, ineqLagmult, eqLagmult, manviofun)
 
     maxviolation, meanviolation = compute_maxmeanviolations(problem, xCur)
 
@@ -356,10 +357,13 @@ def evaluation(problem, xPrev, xCur, ineqLagmult, eqLagmult, manviofun, callback
             "distance": dist,
             "residual": residual,
             "gradnorm": gradnorm,
+            "complviolation": complvio,
+            "dualviolation": nonnegvio,
+            "manviolation": manvio,
             "maxviolation": maxviolation,
             "meanviolation": meanviolation}
 
-    eval = callbackfun(problem, xCur, eval)
+    eval = callbackfun(problem, xCur, ineqLagmult, eqLagmult, eval)
 
     return eval
 

@@ -105,7 +105,8 @@ class Tuner():
 
             # Solve the problem
             self.logger.info(f"Running a solver of class {solver.__class__} with setting_{self.solver_index}")
-            output = solver.run(problem)
+            output = solver.run(copy.deepcopy(problem))
+            # output = solver.run(problem)
             self.logger.info(f"Finished running a solver of class {solver.__class__} with setting_{self.solver_index}")
             if self.cfg.save_experiment:
                 self.save_experiment_output(self.solver_index, instance, output)
@@ -125,7 +126,9 @@ class Tuner():
 
     def gridsearch(self, option, params):
         if params == {}:  # has a complete option
+            self.logger.info(f"Running an experiment with {option}")
             self.run_experiment(option) # running an experiment with the option
+            self.logger.info(f"Finished an experiments with {option}")
         else:  # recursion
             params_keys = list(params.keys())
             key = params_keys[0]  # pick up a key (one of hyperparameters)
@@ -176,7 +179,7 @@ class Tuner():
         # Make a figure and save it
         ax.legend(bbox_to_anchor=(1,0.05), loc='lower right')
         plt.xlabel('$t$')
-        plt.ylabel('P$(r_p \leq t: 1\leq s \leq n)$')
+        plt.ylabel('P$(r_p \\leq t: 1\\leq s \\leq n)$')
         plt.title(f'Performance profile ({self.cfg.solver_name} at {self.cfg.problem_name})')
         plt.savefig(f"{self.cfg.output_path}/performance_profile.pdf")
 

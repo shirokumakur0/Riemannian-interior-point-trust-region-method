@@ -5,6 +5,7 @@ from abc import ABCMeta
 
 @dataclass
 class BaseOutput:
+    name: str
     x: field(default_factory=list)
     option: Optional[Dict]
     log: Optional[Dict]
@@ -29,6 +30,15 @@ class Solver(object, metaclass=ABCMeta):
         default_option.update(solver_option)  # putting the setting in the default_option before that in the argument
         self.option = default_option
         self.log = {}
+        self.name = self.__class__.__name__
+        self.initialize_wandb()
+
+    def initialize_wandb(self):
+        if self.option["wandb_logging"]:
+            wandb.finish()
+            _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
+                            name = self.name,  # the name of the run
+                            config=self.option)  # save hyperparameters and metadata
 
     # Overridden in subclasses
     def run(self, problem):
@@ -45,7 +55,8 @@ class Solver(object, metaclass=ABCMeta):
         return solver_status
 
     # Save optimization process
-    def add_log(self, iter, start_time, eval, solver_status):
+    def add_log(self, iter, start_time, eval, solver_status, excluded_time=0):
+
         # Logging in self.log
         if iter == 0:  # only for the first evaluation
             self.log["iteration"] = [0]
@@ -57,7 +68,7 @@ class Solver(object, metaclass=ABCMeta):
                 self.log[f"{key}"] = [value]
         else:
             self.log["iteration"].append(iter)
-            run_time = time.time() - start_time
+            run_time = time.time() - start_time - excluded_time
             self.log["time"].append(run_time)
             for key, value in eval.items():
                 self.log[f"{key}"].append(value)
@@ -71,7 +82,7 @@ class Solver(object, metaclass=ABCMeta):
             wandblog.update(solver_status)
             wandb.log(wandblog)
 
-    def check_stoppingcriterion(self, start_time, iter, stopping_criteria):
+    def check_stoppingcriterion(self, start_time, iter, stopping_criteria, excluded_time=0):
         option = self.option
         maxtime = option["maxtime"]
         maxiter = option["maxiter"]
@@ -79,7 +90,8 @@ class Solver(object, metaclass=ABCMeta):
         stop = False
         reason = None
 
-        run_time = time.time() - start_time
+        run_time = time.time() - start_time - excluded_time
+        
         if run_time >= maxtime:
             stop = True
             reason = (f"Max time exceeded; runtime={run_time:.2f} and maxtime={maxtime}")

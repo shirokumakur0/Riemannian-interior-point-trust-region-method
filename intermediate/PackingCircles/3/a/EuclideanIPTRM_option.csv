@@ -1,0 +1,2 @@
+maxtime,tolresid,jac,hess,hessp,initial_tr_radius,initial_constr_penalty,initial_barrier_parameter,disp,verbosity,callbackfun,wandb_logging,maxiter,wandb_project
+100,0,,,,1,1,0.1,False,2,<function EuclideanIPTRM.__init__.<locals>.<lambda> at 0xffff68835760>,True,1000,PackingCircles-3-a

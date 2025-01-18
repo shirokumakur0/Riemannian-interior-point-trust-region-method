@@ -4,7 +4,7 @@
 
 problem_name: 'NonnegPCA'
 problem_instance: 1  # can be swept by multi-run
-problem_initialpoint: a  # can be swept by multi-run
+problem_initialpoint: b  # can be swept by multi-run
 problem_coordinator_name: "coordinator"  # called in simulator to set a problem
 solver_name: ["RIPTRM"]
 
