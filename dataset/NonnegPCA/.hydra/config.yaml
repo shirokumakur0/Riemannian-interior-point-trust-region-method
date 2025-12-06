@@ -1,0 +1,9 @@
+dim: 50
+snr: 0.5
+delta: 0.7
+problem_name: NonnegPCA
+instance_name: 1
+initialpoints:
+- a
+initialpoints_type: feasible
+output_path: dataset/${problem_name}/${instance_name}
