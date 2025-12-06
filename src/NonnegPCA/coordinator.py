@@ -78,7 +78,6 @@ class Coordinator(problem_coordinator.Coordinator):
 
     # Set equality constraints, which are empty in this problem
     def set_eqconstraints(self):
-        # return Constraints()
         return []
 
     # Set initial points

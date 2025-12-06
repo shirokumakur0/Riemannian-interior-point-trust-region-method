@@ -16,7 +16,6 @@ def manviofun(problem, x):
 class Simulator(base_simulator.Simulator):
     def add_solver_option(self, option):
         option["manviofun"] = manviofun
-        # Can add "callbackfun" to option in the same manner.
         return option
 
     def run(self):
@@ -37,7 +36,7 @@ class Simulator(base_simulator.Simulator):
             solver = self.set_solver(name)  # set solver
             self.logger.info(f"Running a solver of class {solver.__class__}")
             output = solver.run(copy.deepcopy(problem))  # run the experiments
-            # changed the following line
+
             self.save_output(output.name, output)
             self.logger.info(f"Finished running a solver of class {solver.__class__}")
         self.logger.info(f"Finished running a simulator of class {self.__class__} -- instance: {self.cfg.problem_instance}, initial point: {self.cfg.problem_initialpoint}")

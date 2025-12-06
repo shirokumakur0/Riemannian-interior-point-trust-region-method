@@ -2,22 +2,9 @@
 # The file will be passed to instances of a series of Generator() in which
 # data are generated according to the setting in this configuration file.
 
-# Tutorial for your project:
-# 1. Before making any edits to this file, make sure to change the root folder name
-#    from 'template' to match your project's name.
-# 2. Edit the hyperparameters that will be used in dataset generation.
-# 3. Update the 'project_name' variable to match the actual name of your project.
-# 4. Adjust the 'instance_name' and 'initialpoints' as needed for your specific use case.
-# 5. If you plan to use multi-run functionality during dataset generation,
-#    modify the 'hydra-sweeper-params' to indicate the appropriate range for multi-run.
-#
-# Next, please proceed to the 'generator.py' file.
-
 # Hyperparameters
 dim: 10
 # alpha: 1e6
-
-
 
 # Setting for data generation.
 problem_name: 'Rosenbrock'

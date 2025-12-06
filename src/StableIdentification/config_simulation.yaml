@@ -23,7 +23,7 @@ solver_option:
     RIPTRM:
       TRS_solver: 'tCG'
       second_order_stationarity: False
-      # TRS_solver: 'Exact_RepMat'  # 'Exact_RepMat', 'Exact_Operator', or 'tCG', 'Cauchy'
+      # TRS_solver: 'Exact_RepMat'
       # second_order_stationarity: True
     RSQO:
       quadoptim_eigvalcorr: 1e-4  # 1e-2

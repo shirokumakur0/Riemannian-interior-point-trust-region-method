@@ -6,7 +6,7 @@ problem_name: 'Rosenbrock'
 problem_instance: 1  # can be swept by multi-run
 problem_initialpoint: a  # can be swept by multi-run
 problem_coordinator_name: "coordinator"  # called in simulator to set a problem
-solver_name: ["RSQO","RIPTRM"]  # can be swept by multi-run
+solver_name: ["RSQO","RIPTRM","RIPM","RALM"]  # can be swept by multi-run
 n: 5
 k: 3
 alpha: 1e7
@@ -22,9 +22,9 @@ solver_option:
       verbosity: 0
     # Settings specific to each solver
     RIPTRM:
-      TRS_solver: 'tCG'  # 'Exact_RepMat', 'Exact_Operator', or 'tCG', 'Cauchy'
+      TRS_solver: 'tCG'
       second_order_stationarity: False
-      # TRS_solver: 'Exact_RepMat'  # 'Exact_RepMat', 'Exact_Operator', or 'tCG', 'Cauchy'
+      # TRS_solver: 'Exact_RepMat'
       # second_order_stationarity: True
     RSQO:
       quadoptim_eigvalcorr: 1e-2  # 1e-4
@@ -40,6 +40,6 @@ hydra:
     dir: intermediate/${problem_name}
   sweeper:
     params:
-      problem_instance: 1,2,3
-      problem_initialpoint: a,b,c
-      solver_name: ["RALM"]
+      problem_instance: 1
+      problem_initialpoint: a
+      solver_name: ["RSQO","RIPTRM","RIPM","RALM"]
