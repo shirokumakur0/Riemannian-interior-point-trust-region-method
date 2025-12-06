@@ -21,27 +21,19 @@ The directory structure is as follows:
 +-- dataset
 +-- intermediate
 +-- result
-(+-- tuning)
 +-- src
-    +-- template
-        +-- config_dataset.yaml
-        +-- config_simulation.yaml
-        +-- generator.py
-        +-- simulator.py
-        +-- coordinator.py
-        +-- analyzer.ipynb
-        (+-- config_tuning.yaml)
-        (+-- tuner.py)
     +-- solver
             +-- ...
     +-- base
         +-- ...
-    +-- Nonneg PCA (demonstration)
+    +-- NonnegPCA
+    +-- Rosenbrock
+    +-- StableIdenticaition
 </pre>
 
 1. Running the 'generator' module generates input data and saves it in the 'dataset' folder based on the configurations specified in 'config_dataset.yaml'. The generated data includes various parameters and initial conditions essential for the optimization process.
 
-1. Executing the 'simulator' module initiates numerical experiments with the settings provided in 'config_simulation.yaml'.
+2. Executing the 'simulator' module initiates numerical experiments with the settings provided in 'config_simulation.yaml'.
 The outputs of these experiments are stored in the 'intermediate' folder.
 During this process, the 'simulator' uses information from the 'dataset' folder to configure the experimental environment.
 It also calls the 'problem_coordinator' and 'solver' modules to create and solve the optimization problem, respectively.
@@ -55,9 +47,9 @@ For a visual representation of the relationships and workflow among the modules,
 
 The following optimization problems are available:
 
-- (予定) Packing circles with ellipses
-- (予定) Constrained synchronization of rotations
-- (予定) Constrained two-layer nonlinear neural networks
+- Nonnegative principal component analysis (NonnegPCA)
+- Rosenbrock function minimization (Rosenbrock)
+- Stable linear system identification (StableIdentification)
 
 ## Note
 **1. Wandb visualization**

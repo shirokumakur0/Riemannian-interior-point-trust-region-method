@@ -1,2 +1,0 @@
-maxtime,tolresid,jac,hess,hessp,initial_tr_radius,initial_constr_penalty,initial_barrier_parameter,disp,verbosity,callbackfun,wandb_logging,maxiter,wandb_project,manviofun
-60,0,,,,1,1,0.1,False,1,<function EuclideanIPTRM.__init__.<locals>.<lambda> at 0x147b93600>,False,100,NonnegPCA-1-b,<function manviofun at 0x1002d19e0>

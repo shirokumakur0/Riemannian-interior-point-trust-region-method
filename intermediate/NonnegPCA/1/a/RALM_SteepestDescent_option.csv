@@ -1,0 +1,2 @@
+maxtime,maxiter,tolresid,rho,bound,tau,thetarho,numOuterItertgn,LagmultUnbdUpdate,innersubsolver,maxInnerIter,startingtolgradnorm,endingtolgradnorm,innerminstepsize,verbosity,manviofun,callbackfun,wandb_logging,do_exit_on_error,wandb_project,stoppingcriterion
+240,10000,1e-16,1,20,0.8,0.3,30,False,SteepestDescent,200,0.001,1e-06,1e-10,0,<function manviofun at 0xffff9e181440>,<function RALM.__init__.<locals>.<lambda> at 0xffff815d6c00>,False,True,NonnegPCA-1-a,Max iteration count reached; maxiter=10000 after 9.51 seconds

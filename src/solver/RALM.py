@@ -280,8 +280,19 @@ class RALM(Solver):
         while True:
             # Evaluation and logging
             log_start_time = time.time()
-            eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
-            solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
+
+            if do_exit_on_error:
+                try:
+                    eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
+                    solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
+                except Exception as e:
+                    print(f"Error: {e}")
+                    break
+            else:
+                eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
+                solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
+            # eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
+            # solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
             log_end_time = time.time()
             excluded_time += log_end_time - log_start_time
             self.add_log(OuterIteration, start_time, eval_log, solver_log, excluded_time)

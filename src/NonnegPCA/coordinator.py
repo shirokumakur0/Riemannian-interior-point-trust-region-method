@@ -11,40 +11,6 @@ import problem_coordinator
 sys.path.append('./src/solver')
 import utils
 
-# @dataclass
-# class Constraints:
-#     has_constraint: bool = False  # whether having a type of constraints or not
-#     num_constraint: int = 0  # the number of constraints. must be compatible with the length of 'constraint' list
-#     constraint: list = field(default_factory=list)
-
-# @dataclass
-# class ManifoldConstraints(Constraints):
-#     type: list = field(default_factory=list)
-
-# @dataclass
-# class Problem(problem_coordinator.BaseProblem):
-#     # costfun: Any
-#     # initialpoint: Any
-#     initialineqLagmult: field(default_factory=list)
-#     initialeqLagmult: field(default_factory=list)
-#     searchspace: Any
-#     eqconstraints: Constraints
-#     ineqconstraints: Constraints
-#     maniconstraints: ManifoldConstraints
-
-"""
-    def __init__(
-        self,
-        manifold,
-        cost,
-        initialpoint,
-        initialineqLagmult,
-        initialeqLagmult,
-        ineqconstraints=[],
-        eqconstraints=[],
-
-        ):"""
-
 # Problem coordinator for nonnegative principal component analysis
 class Coordinator(problem_coordinator.Coordinator):
 
@@ -56,7 +22,6 @@ class Coordinator(problem_coordinator.Coordinator):
         initialpoint = self.set_initialpoint()
         initialineqLagmult = self.set_initialineqLagmult()
         initialeqLagmult = self.set_initialeqLagmult()
-        # maniconstraints = self.set_maniconstraints()
         problem = utils.NonlinearProblem(
             manifold=manifold,
             cost=costfun,
@@ -66,15 +31,6 @@ class Coordinator(problem_coordinator.Coordinator):
             initialineqLagmult=initialineqLagmult,
             initialeqLagmult=initialeqLagmult,
         )
-        # problem = Problem(searchspace=searchspace,
-        #                   costfun=costfun,
-        #                   ineqconstraints=ineqconstraints,
-        #                   eqconstraints=eqconstraints,
-        #                   initialpoint=initialpoint,
-        #                   initialineqLagmult=initialineqLagmult,
-        #                   initialeqLagmult=initialeqLagmult,
-        #                   maniconstraints=maniconstraints
-        #                   )
         return problem
 
     # Set sphere manifold as a search space

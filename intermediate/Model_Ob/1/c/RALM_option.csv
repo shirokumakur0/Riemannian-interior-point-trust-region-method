@@ -1,2 +1,0 @@
-maxtime,maxiter,tolresid,rho,bound,tau,thetarho,numOuterItertgn,LagmultUnbdUpdate,innersubsolver,maxInnerIter,startingtolgradnorm,endingtolgradnorm,innerminstepsize,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
-100,100,1e-12,1,20,0.8,0.3,30,False,TrustRegions,200,0.001,1e-06,1e-10,1,<function RALM.__init__.<locals>.<lambda> at 0x15b94cae0>,<function RALM.__init__.<locals>.<lambda> at 0x15bab2660>,False,Model_Ob-1-c,KKT residual tolerance reached; current residual=8.506894163782507e-13 and tolresid=1e-12 after 14.53 seconds

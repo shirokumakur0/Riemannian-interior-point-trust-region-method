@@ -1,2 +1,2 @@
-maxtime,maxiter,tolresid,rho,bound,tau,thetarho,numOuterItertgn,LagmultUnbdUpdate,innersubsolver,maxInnerIter,startingtolgradnorm,endingtolgradnorm,innerminstepsize,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
-240,100,0,1,20,0.8,0.3,30,False,SteepestDescent,200,0.001,1e-06,1e-10,0,<function RALM.__init__.<locals>.<lambda> at 0xffff545efc40>,<function RALM.__init__.<locals>.<lambda> at 0xffff545efba0>,True,StableIdentification-1-s,Max iteration count reached; maxiter=100 after 6.83 seconds
+maxtime,maxiter,tolresid,rho,bound,tau,thetarho,numOuterItertgn,LagmultUnbdUpdate,innersubsolver,maxInnerIter,startingtolgradnorm,endingtolgradnorm,innerminstepsize,verbosity,manviofun,callbackfun,wandb_logging,do_exit_on_error,wandb_project
+240,10000,0,1,20,0.8,0.3,30,False,SteepestDescent,200,0.001,1e-06,1e-10,0,<function manviofun at 0xffffb0821440>,<function RALM.__init__.<locals>.<lambda> at 0xffff71cb04a0>,False,True,StableIdentification-1-s

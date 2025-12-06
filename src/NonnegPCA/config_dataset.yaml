@@ -3,14 +3,14 @@
 # data are generated according to the setting in this configuration file.
 
 # Hyperparameters
-dim: 500
+dim: 50
 snr: 0.5
 delta: 0.7
 
 # Setting for data generation.
 problem_name: 'NonnegPCA'
-instance_name: 2  # can be swept by multi-run
-initialpoints: ["a","b","c"]  # the list of initial points' names.
+instance_name: 1  # can be swept by multi-run
+initialpoints: ["a"]  # the list of initial points' names.
 initialpoints_type: 'feasible'  # 'random' or 'feasible'
 output_path: dataset/${problem_name}/${instance_name}
 ### NOTE ###

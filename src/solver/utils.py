@@ -601,7 +601,7 @@ def selfadj_operator2matrix(M, x, F, Bx):
 
 def tangent2vec(M, x, basis, u):
     n = len(basis)
-    vec =np.zeros(n)
+    vec = np.zeros(n)
     for k in range(n):
         vec[k] = M.inner_product(x, basis[k], u)
     return vec

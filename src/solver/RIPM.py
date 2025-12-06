@@ -8,6 +8,8 @@ import sys
 sys.path.append('./src/base')
 from base_solver import Solver, BaseOutput
 
+# import matplotlib.pyplot as plt
+
 warnings.filterwarnings("ignore", message="Output seems independent of input.")
 
 def barFx(x, c, gradfuns, manifold):
@@ -182,7 +184,8 @@ class RIPM(Solver):
         default_option.update(option)  # putting the setting in the default_option before that in the argument
         self.option = default_option
         self.log = {}  # will be filled in self.add_log
-        self.name = "RIPM_Krylov" if self.option["KrylovIterMethod"] else "RIPM_RepMat"
+        type = "Krylov" if self.option["KrylovIterMethod"] else "RepMat"
+        self.name = f"RIPM_{type}_gamma{self.option['gamma']}_beta{self.option['linesearch_beta']}_theta{self.option['linesearch_theta']}"
         self.initialize_wandb()
 
         # if self.option["wandb_logging"]:
@@ -315,6 +318,8 @@ class RIPM(Solver):
             # NTdir = NTdir + sol_vec[i] * basis[i]
         RepresentMat = T_mat
         RepresentMatOrder = x_manifold.dim + y_manifold.dim
+
+        # print("Aw_mat cond:", Aw_mat)
 
         return NTdir, RepresentMat, RepresentMatOrder
     
@@ -461,7 +466,8 @@ class RIPM(Solver):
         PhiCur = self.xyzs_manifold_norm(xyzsCur, KKTvec)**2
 
         # Construct parameters sigma to controls the final convergence rate
-        sigma = min(0.5, np.real(np.sqrt(PhiCur)))
+        # sigma = min(0.5, np.real(np.sqrt(PhiCur)))
+        sigma = min(0.5, np.real(np.sqrt(PhiCur)**0.5))
         rho = (zCur @ sCur) / num_ineqconstraints
         self.gamma = copy.deepcopy(option["gamma"])
         xyCur = [xCur, yCur]
@@ -538,7 +544,13 @@ class RIPM(Solver):
         else:
             xbasis = basisfun(manifold, xCur)
             ybasis = np.eye(num_eqconstraints)
-            NTdirdxdy, _, _ = self.RepresentMatMethod(OperatorAw, OperatorHxaj, OperatorHx, cq, xyCur, xbasis, ybasis)
+            NTdirdxdy, represent_mat, _ = self.RepresentMatMethod(OperatorAw, OperatorHxaj, OperatorHx, cq, xyCur, xbasis, ybasis)
+
+
+
+            # print("RepresentMat cond:", type(represent_mat))
+
+
         # Recovery dz and ds.
         Ntdirdz = (zCur * (Gxaj(xCur, NTdirdxdy[0]) + KKTvec[2]) + sigma * rho * ehat - KKTvec[3]) / sCur
         NTdirds = (sigma * rho * ehat - KKTvec[3] - sCur * Ntdirdz) / zCur
@@ -560,6 +572,62 @@ class RIPM(Solver):
                 nablaFds = z * ds + s * dz
                 nablaF = pymanopt.manifolds.product._ProductTangentVector([nablaFdx, nablaFdy, nablaFdz, nablaFds])
                 return nablaF
+            
+
+            def xyzs_operator2matrix(x, y, z, s, F, xbasis, ybasis, zbasis, sbasis):
+                n = len(xbasis) + len(ybasis) + len(zbasis) + len(sbasis)
+                A = np.zeros((n, n))
+                xyzsCur = [x, y, z, s]
+                zeroxbasis = np.zeros_like(xbasis[0])
+                if ybasis.shape[0] > 0:
+                    zeroybasis = np.zeros_like(ybasis[0])
+                else:
+                    zeroybasis = np.array([])
+                zerozbasis = np.zeros_like(zbasis[0])
+                zerosbasis = np.zeros_like(sbasis[0])
+
+                xyzsbasis = (
+                    [pymanopt.manifolds.product._ProductTangentVector([xbasis[i], zeroybasis, zerozbasis, zerosbasis]) for i in range(len(xbasis))]
+                    + [pymanopt.manifolds.product._ProductTangentVector([zeroxbasis, ybasis[j], zerozbasis, zerosbasis]) for j in range(len(ybasis))]
+                    + [pymanopt.manifolds.product._ProductTangentVector([zeroxbasis, zeroybasis, zbasis[k], zerosbasis]) for k in range(len(zbasis))]
+                    + [pymanopt.manifolds.product._ProductTangentVector([zeroxbasis, zeroybasis, zerozbasis, sbasis[l]]) for l in range(len(sbasis))]
+                )
+                for j in range(n):
+                    Fj = F(x, y, z, s, xyzsbasis[j])
+                    for i in range(n):  # Non-symmetric
+                        A[i, j] = self.xyzs_manifold_inner_product(xyzsCur, xyzsbasis[i], Fj)
+                return A, xyzsbasis, n
+            xbasis = basisfun(manifold, xCur)
+            ybasis = np.eye(num_eqconstraints)
+            zbasis = np.eye(num_ineqconstraints)
+            sbasis = np.eye(num_ineqconstraints)
+            CovarDerivKKT_mat, CovarDerivKKT_basis, xyzsdim = xyzs_operator2matrix(xCur, yCur, zCur, sCur, CovarDerivKKT, xbasis, ybasis, zbasis, sbasis)
+            eigvals = np.linalg.eigvals(CovarDerivKKT_mat)  # 一般の正方行列
+            idxmin = np.argmin(np.abs(eigvals))
+            CovDerivKKT_minabseigval = eigvals[idxmin]
+
+            # def lincomb_basis(coeffs):
+            #     """coeffs (長さ n の1次元 array) から
+            #     Σ_i coeffs[i] * basis[i] を作る。
+            #     Pymanopt の ProductTangentVector にスカラー倍 & 加法が定義されていると仮定。
+            #     """
+            #     v = 0 * CovarDerivKKT_basis[0]  # ゼロベクトルを作る適当な方法
+            #     for alpha, b in zip(coeffs, CovarDerivKKT_basis):
+            #         v = v + alpha * b
+            #     return v
+
+            # for trial in range(10):
+            #     c = np.random.randn(xyzsdim)  # ランダム係数
+            #     dw = lincomb_basis(c)
+
+            #     F1 = CovarDerivKKT(xCur, yCur, zCur, sCur, dw)
+
+            #     c2 = CovarDerivKKT_mat @ c
+            #     F2 = lincomb_basis(c2)
+
+            #     diff = F1 - F2
+            #     err = self.xyzs_manifold_inner_product(xyzsCur, diff, diff)**0.5
+            #     print(f"trial {trial}, error = {err}")
 
             # Adjoint of covariant Derivative of KKT vector field
             # DEBUG ONLY
@@ -585,7 +653,9 @@ class RIPM(Solver):
             nablaF_NTdir = nablaF(NTdir)
             NTdir_error1 = self.xyzs_manifold_norm(xyzsCur, nablaF_NTdir - NTeq_rhs)
             # NTdir_error1 = xyzs_manifold.norm(xyzsCur, nablaF_NTdir - NTeq_rhs)
-            print("NTdir_error1", NTdir_error1)
+            verbosity = self.option["verbosity"]
+            if verbosity >= 2:
+                print("NTdir_error1", NTdir_error1)
 
             # Check Item#2: If NTdir is correct solution, then
             # <grad phi, NTdir> = 2(|F(w)|^{2}+sigma*rho*InnerProduct(z,s)) holds,
@@ -595,7 +665,8 @@ class RIPM(Solver):
             val_innerproduct = self.xyzs_manifold_inner_product(xyzsCur, gradphi, NTdir)
             # val_innerproduct = xyzs_manifold.inner_product(xyzsCur, gradphi, NTdir)
             NTdir_error2 = abs(val_innerproduct - 2*(sigma*rho*(zCur @ sCur)-PhiCur))
-            print("NTdir_error2", NTdir_error2)
+            if verbosity >= 2:
+                print("NTdir_error2", NTdir_error2)
 
             # Record Item: record norm of NTdirl; angle between - grad phi and NTdir.
             Norm_gradphi = self.xyzs_manifold_norm(xyzsCur, gradphi)
@@ -603,7 +674,7 @@ class RIPM(Solver):
             # Norm_gradphi = xyzs_manifold.norm(xyzsCur, gradphi)
             # NTdir_norm = xyzs_manifold.norm(xyzsCur, NTdir)
             NTdir_angle = - val_innerproduct / (Norm_gradphi * NTdir_norm)
-            NTdir_info = [NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle]
+            NTdir_info = [NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle, CovDerivKKT_minabseigval]
 
         # Backtracking line search and update.
         # Central functions
@@ -612,6 +683,57 @@ class RIPM(Solver):
 
         # Note that <grad phi, NTdir> = ls_RightItem, if NTdir is a correct solution.
         ls_RightItem = 2 * (sigma * rho * (zCur @ sCur) - PhiCur)
+
+        # Also compute the inner product of NTdir and gradient of f
+        costgradfun = problem.riemannian_gradient
+        gradfCur = costgradfun(xCur)
+        gradfNTdir = problem.manifold.inner_product(xCur, gradfCur, NTdir[0])
+
+        # def plot_linesearch(fun, retr, x, direction, step=50, s_max=1.0,
+        #                     logy=False, show_min=True, savepath="linesearch.png"):
+        #     ss = np.linspace(0.0, s_max, step + 1)
+        #     fs = np.empty_like(ss)
+
+        #     for k, s in enumerate(ss):
+        #         newx = retr(x, s * direction)
+        #         fs[k] = float(fun(newx))  # 念のためfloat化
+
+        #     fig, ax = plt.subplots()
+        #     y = np.log(fs) if logy else fs
+        #     ax.plot(ss, y, markersize=3, linewidth=1)
+        #     ax.set_xlabel("step size s")
+        #     ax.set_ylabel("log f(retr(x, s*dir))" if logy else "f(retr(x, s*dir))")
+        #     ax.set_title("Line search trace")
+        #     ax.grid(True)
+
+        #     if show_min:
+        #         kmin = np.argmin(fs)
+        #         ax.scatter([ss[kmin]], [y[kmin]], marker="x", s=80)
+        #         ax.annotate(f"min@{ss[kmin]:.3g}",
+        #                     (ss[kmin], y[kmin]),
+        #                     textcoords="offset points", xytext=(6, 6))
+
+        #     fig.tight_layout()
+        #     fig.savefig(savepath, dpi=200, bbox_inches="tight")
+        #     plt.close(fig)  # メモリ節約のため閉じる
+
+        #     print("saved:", savepath)
+        #     return ss, fs
+        # plot_linesearch(
+        #     fun=lambda xyzsNew: self.xyzs_manifold_norm(xyzsNew, KKTVectorField(xyzsNew))**2,
+        #     retr=lambda xyzs, dir: self.xyzs_manifold_retraction(xyzs, dir),
+        #     x=xyzsCur,
+        #     direction=NTdir,
+        #     step=50,
+        #     s_max=1,
+        #     logy=False,
+        #     show_min=True,
+        #     savepath="linesearch.png"
+        # )
+        # input()
+
+        normNTdirx = self.x_manifold.norm(xCur, NTdir[0])
+        normNTdirw = self.xyzs_manifold_norm(xyzsCur, NTdir)
 
         stepsize = 1
         ls_status = True
@@ -624,11 +746,15 @@ class RIPM(Solver):
             # PhiNew = xyzs_manifold.norm(xyzsNew, KKTvec)**2
             zNew = xyzsNew[2]
             sNew = xyzsNew[3]
-            if PhiNew - PhiCur <= ls_beta * stepsize * ls_RightItem and fun_1(zNew, sNew) >= 0:
-                if ls_execute_fun2 and fun_2(zNew, sNew, PhiNew) >= 0:
-                    break
-                else:
-                    break
+            # if PhiNew - PhiCur <= ls_beta * stepsize * ls_RightItem and fun_1(zNew, sNew) >= 0:
+            #     if ls_execute_fun2 and fun_2(zNew, sNew, PhiNew) >= 0:
+            #         break
+            #     else:
+            #         break
+            if (PhiNew - PhiCur <= ls_beta * stepsize * ls_RightItem
+                    and fun_1(zNew, sNew) >= 0
+                    and (not ls_execute_fun2 or fun_2(zNew, sNew, PhiNew) >= 0)):
+                break
             r += 1
             if r > ls_max_steps:
                 ls_status = False
@@ -668,8 +794,12 @@ class RIPM(Solver):
         output["PhiCur"] = PhiCur
         output["sigma"] = sigma
         output["rho"] = rho
+        output["normNTdirx"] = normNTdirx
+        output["normNTdirw"] = normNTdirw
         output["stepsize"] = stepsize
         output["ls_status"] = ls_status
+        output["ls_RightItem"] = ls_RightItem
+        output["gradfNTdir"] = gradfNTdir
         output["linesearch_counter"] = r
         output["solve_info"] = solve_info
         output["NTdir_info"] = NTdir_info
@@ -680,8 +810,12 @@ class RIPM(Solver):
 
         xCur, yCur, zCur, sCur, KKTvec, PhiCur, Ehat, sigma, rho = self.preprocess(problem)
         xPrev = copy.deepcopy(xCur)
+        normNTdirx = None
+        normNTdirw = None
         stepsize = None
         ls_status = None
+        ls_RightItem = None
+        gradfNTdir = None
         r = None
         KrylovIterMethod = self.option["KrylovIterMethod"]
         solve_info = None
@@ -702,8 +836,8 @@ class RIPM(Solver):
             # Evaluation and logging
             log_start_time = time.time()
             eval_log = evaluation(problem, xPrev, xCur, zCur, yCur, manviofun, callbackfun)
-            solver_log = self.solver_status(zCur, yCur, PhiCur, sigma, rho,
-                      stepsize=stepsize, linesearch_status=ls_status, linesearch_counter=r, 
+            solver_log = self.solver_status(zCur, yCur, PhiCur, sigma, rho, normNTdirx=normNTdirx, normNTdirw=normNTdirw,
+                      stepsize=stepsize, linesearch_status=ls_status, linesearch_counter=r, linesearch_RightItem=ls_RightItem, gradfNTdir=gradfNTdir,
                       KrylovIterMethod=KrylovIterMethod, solve_info=solve_info, checkNTequation=checkNTequation, NTdir_info=NTdir_info)
             log_end_time = time.time()
             excluded_time += log_end_time - log_start_time
@@ -747,8 +881,12 @@ class RIPM(Solver):
             PhiCur = output["PhiCur"]
             sigma = output["sigma"]
             rho = output["rho"]
+            normNTdirx = output["normNTdirx"]
+            normNTdirw = output["normNTdirw"]
             stepsize = output["stepsize"]
             ls_status = output["ls_status"]
+            ls_RightItem = output["ls_RightItem"]
+            gradfNTdir = output["gradfNTdir"]
             r = output["linesearch_counter"]
             solve_info = output["solve_info"]
             NTdir_info = output["NTdir_info"]
@@ -775,9 +913,13 @@ class RIPM(Solver):
                       Phi,
                       sigma,
                       rho,
+                      normNTdirx=None,
+                      normNTdirw=None,
                       stepsize=None,
                       linesearch_status=None,
                       linesearch_counter=None,
+                      linesearch_RightItem=None,
+                      gradfNTdir=None,
                       KrylovIterMethod=None,
                       solve_info=None,
                       checkNTequation=False,
@@ -797,10 +939,15 @@ class RIPM(Solver):
             maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
         solver_status["maxabsLagmult"] = maxabsLagmult
 
+        solver_status["normNTdirx"] = normNTdirx
+        solver_status["normNTdirw"] = normNTdirw
+
         solver_status["stepsize"] = stepsize
         solver_status["linesearch_status"] = linesearch_status
         solver_status["linesearch_counter"] = linesearch_counter
-        
+        solver_status["linesearch_RightItem"] = linesearch_RightItem
+        solver_status["gradfNTdir"] = gradfNTdir
+
         if KrylovIterMethod:
             if solve_info is not None:
                 t, rel_res = solve_info
@@ -814,16 +961,18 @@ class RIPM(Solver):
         
         if checkNTequation:
             if NTdir_info is not None:
-                NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle = NTdir_info
+                NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle, CovDerivKKT_minabseigval = NTdir_info
                 solver_status["NTdir_error1"] = NTdir_error1
                 solver_status["NTdir_error2"] = NTdir_error2
                 solver_status["NTdir_norm"] = NTdir_norm
                 solver_status["NTdir_angle"] = NTdir_angle
+                solver_status["CovDerivKKT_minabseigval"] = CovDerivKKT_minabseigval
             else:
                 solver_status["NTdir_error1"] = None
                 solver_status["NTdir_error2"] = None
                 solver_status["NTdir_norm"] = None
                 solver_status["NTdir_angle"] = None
+                solver_status["CovDerivKKT_minabseigval"] = None
 
         return solver_status
 

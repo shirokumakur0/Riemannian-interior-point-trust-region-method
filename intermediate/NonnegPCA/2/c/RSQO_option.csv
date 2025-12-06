@@ -1,2 +1,0 @@
-maxtime,maxiter,tolresid,quadoptim_type,quadoptim_eigvalcorr,quadoptim_eigvalthld,quadoptim_maxiter,quadoptim_basisfun,rho,tau,beta,gamma,linesearch_max,verbosity,manviofun,callbackfun,wandb_logging,wandb_project,stoppingcriterion
-60,100,0,reghess,1e-08,0.001,400,<function RSQO.__init__.<locals>.<lambda> at 0x12fb60c20>,1,0.5,0.9,0.25,400,1,<function manviofun at 0x105c993a0>,<function RSQO.__init__.<locals>.<lambda> at 0x12fb2dd00>,True,NonnegPCA-2-c,Max time exceeded; runtime=60.88 and maxtime=60

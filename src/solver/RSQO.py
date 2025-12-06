@@ -7,6 +7,9 @@ import sys
 sys.path.append('./src/base')
 from base_solver import Solver # , BaseOutput
 
+# import matplotlib.pyplot as plt
+
+
 # ell_1 penalty function for line search
 def ell_1penaltyfun(point, rho, costfun, ineqconstraints, eqconstraints):
     val = costfun(point)
@@ -67,7 +70,8 @@ class RSQO(Solver):
         default_option.update(option)  # putting the setting in the default_option before that in the argument
         self.option = default_option
         self.log = {}  # will be filled in self.add_log
-        self.name = f"RSQO_{self.option['quadoptim_type']}"
+        # self.name = f"RSQO_{self.option['quadoptim_type']}_gamma{self.option['gamma']}_beta{self.option['beta']}"
+        self.name = f"RSQO_{self.option['quadoptim_type']}_corr{self.option['quadoptim_eigvalcorr']:.0e}"
         self.initialize_wandb()
 
         # if self.option["wandb_logging"]:
@@ -118,7 +122,6 @@ class RSQO(Solver):
         quadoptim_feastol = max(option['quadoptim_feastol'], tolresid)
 
         if option["quadoptim_type"] == 'reghess':
-            
             # Preparation for constructing the subproblem
             def hessLagfunCur(tangent_vector):
                 vec = hesscostfun(xCur, tangent_vector)
@@ -161,8 +164,9 @@ class RSQO(Solver):
             raise ValueError("quadoptim_type must be 'reghess', 'reghess_operator', or 'eye'.")
 
         # Compute the first-order term in the objective function
-        gradf = gradcostfun
-        gradobjxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradf(xCur))
+        # gradf = gradcostfun
+        # gradobjxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradf(xCur))
+        gradobjxCur = gradcostfun(xCur)
         p = np.empty(len(orthobasis))
         for i in range(len(orthobasis)):
             p[i] = manifold.inner_product(xCur, gradobjxCur, orthobasis[i])
@@ -178,7 +182,8 @@ class RSQO(Solver):
                 ineqcstrfun = ineqconstraints[i]
                 h[i] = -ineqcstrfun(xCur)
                 gradineqcstrfun = gradineqconstraints[i]
-                gradineqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradineqcstrfun(xCur))
+                # gradineqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradineqcstrfun(xCur))
+                gradineqxCur = gradineqcstrfun(xCur)
                 for j in range(len(orthobasis)):
                     G[i,j] = manifold.inner_product(xCur, gradineqxCur, orthobasis[j])
             G = matrix(G)
@@ -195,7 +200,8 @@ class RSQO(Solver):
                 eqcstrfun = eqconstraints[i]
                 b[i] = -eqcstrfun(xCur)
                 gradeqcstrfun = gradeqconstraints[i]
-                gradeqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradeqcstrfun(xCur))
+                # gradeqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradeqcstrfun(xCur))
+                gradeqxCur = gradeqcstrfun(xCur)
                 for j in range(len(orthobasis)):
                     A[i,j] = manifold.inner_product(xCur, gradeqxCur, orthobasis[j])
             A = matrix(A)
@@ -226,6 +232,8 @@ class RSQO(Solver):
         for i in range(len(coeff)):
             dir = dir + coeff[i] * orthobasis[i]
 
+        normdx = manifold.norm(xCur, dir)
+
         # Update rho if necessary
         upsilon = 0
         if has_ineqconstraints:
@@ -243,7 +251,52 @@ class RSQO(Solver):
         newf = ell_1penaltyfun(newx, rho, costfun, ineqconstraints, eqconstraints)
         linesearch_status = 1
         linesearch_counter = 0
-        while newf > f0 - gammadf0:
+
+        # def plot_linesearch(fun, retr, x, direction, step=50, s_max=1.0,
+        #                     logy=False, show_min=True, savepath="linesearch.png"):
+        #     ss = np.linspace(0.0, s_max, step + 1)
+        #     fs = np.empty_like(ss)
+
+        #     for k, s in enumerate(ss):
+        #         newx = retr(x, s * direction)
+        #         fs[k] = float(fun(newx))  # 念のためfloat化
+
+        #     fig, ax = plt.subplots()
+        #     y = np.log(fs) if logy else fs
+        #     ax.plot(ss, y, markersize=3, linewidth=1)
+        #     ax.set_xlabel("step size s")
+        #     ax.set_ylabel("log f(retr(x, s*dir))" if logy else "f(retr(x, s*dir))")
+        #     ax.set_title("Line search trace")
+        #     ax.grid(True)
+
+        #     if show_min:
+        #         kmin = np.argmin(fs)
+        #         ax.scatter([ss[kmin]], [y[kmin]], marker="x", s=80)
+        #         ax.annotate(f"min@{ss[kmin]:.3g}",
+        #                     (ss[kmin], y[kmin]),
+        #                     textcoords="offset points", xytext=(6, 6))
+
+        #     fig.tight_layout()
+        #     fig.savefig(savepath, dpi=200, bbox_inches="tight")
+        #     plt.close(fig)  # メモリ節約のため閉じる
+
+        #     print("saved:", savepath)
+        #     return ss, fs
+        # plot_linesearch(
+        #     fun=lambda z: ell_1penaltyfun(z, rho, costfun, ineqconstraints, eqconstraints),
+        #     retr=manifold.retraction,
+        #     x=xCur,
+        #     direction=dir,
+        #     step=50,
+        #     s_max=0.02,
+        #     logy=False,
+        #     show_min=True,
+        #     savepath="linesearch.png"
+        # )
+        # input()
+
+        while newf > (f0 - gammadf0) and np.abs(newf - (f0 - gammadf0)) > option["linesearch_threshold"]:
+        # while newf > f0 - gammadf0:
             linesearch_counter += 1
             if linesearch_counter >= option["linesearch_max"]:
                 linesearch_status = 0
@@ -257,7 +310,7 @@ class RSQO(Solver):
         xCur = newx
         ineqLagCur = ineqLagsol
         eqLagCur = eqLagsol
-        return xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, stepsize, linesearch_status, linesearch_counter
+        return xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, normdx, stepsize, df0, linesearch_status, linesearch_counter
 
     def postprocess(self, xfinal, ineqLagfinal, eqLagfinal):
         output = Output(name=self.name,
@@ -278,6 +331,8 @@ class RSQO(Solver):
         upsilon = None
         sol = None
         stepsize = None
+        normdx = None
+        df0 = None
         linesearch_status = None
         linesearch_counter = None
 
@@ -296,7 +351,7 @@ class RSQO(Solver):
             # Evaluation and logging
             log_start_time = time.time()
             eval_log = evaluation(problem, xPrev, xCur, ineqLagCur, eqLagCur, manviofun, callbackfun)
-            solver_log = self.solver_status(ineqLagCur, eqLagCur, rho, upsilon, sol, stepsize, linesearch_status, linesearch_counter)
+            solver_log = self.solver_status(ineqLagCur, eqLagCur, rho, upsilon, sol, normdx, stepsize, df0, linesearch_status, linesearch_counter)
             log_end_time = time.time()
             excluded_time += log_end_time - log_start_time
             self.add_log(iteration, start_time, eval_log, solver_log, excluded_time)
@@ -324,12 +379,12 @@ class RSQO(Solver):
 
             if do_exit_on_error:
                 try:
-                    xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, stepsize, linesearch_status, linesearch_counter = self.step(problem, xCur, ineqLagCur, eqLagCur, rho)
+                    xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, normdx, stepsize, df0, linesearch_status, linesearch_counter = self.step(problem, xCur, ineqLagCur, eqLagCur, rho)
                 except Exception as e:
                     print(f"Error: {e}")
                     break
             else:
-                xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, stepsize, linesearch_status, linesearch_counter = self.step(problem, xCur, ineqLagCur, eqLagCur, rho)
+                xCur, ineqLagCur, eqLagCur, rho, upsilon, sol, normdx, stepsize, df0, linesearch_status, linesearch_counter = self.step(problem, xCur, ineqLagCur, eqLagCur, rho)
 
         # After exiting while loop, we return the final output
         output = self.postprocess(xCur, ineqLagCur, eqLagCur)
@@ -347,7 +402,9 @@ class RSQO(Solver):
                       rho,
                       upsilon=None,
                       sol=None,
+                      normdx=None,
                       stepsize=None,
+                      df0=None,
                       linesearch_status=None,
                       linesearch_counter=None
                       ):
@@ -385,7 +442,9 @@ class RSQO(Solver):
             # solver_status["quadoptim_primalslack"] = None
             # solver_status["quadoptim_dualslack"] = None
 
+        solver_status["normdx"] = normdx
         solver_status["stepsize"] = stepsize
+        solver_status["df0"] = df0
         solver_status["linesearch_status"] = linesearch_status
         solver_status["linesearch_counter"] = linesearch_counter
 
