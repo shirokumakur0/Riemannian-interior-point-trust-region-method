@@ -1,0 +1,6 @@
+dim: 10
+problem_name: Rosenbrock
+instance_name: 1
+initialpoints:
+- a
+output_path: dataset/${problem_name}/${instance_name}
