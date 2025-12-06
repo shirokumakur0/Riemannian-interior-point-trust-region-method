@@ -74,10 +74,6 @@ class Coordinator(problem_coordinator.Coordinator):
             nonnegfun = indexdecorated_nonnegfun(idx)
             constraint.append(nonnegfun)
 
-        # ineqconstraints = Constraints(has_constraint = True if dim > 0 else False,
-        #                               num_constraint = dim,
-        #                               constraint = constraint)
-        # return ineqconstraints
         return constraint
 
     # Set equality constraints, which are empty in this problem
@@ -102,20 +98,6 @@ class Coordinator(problem_coordinator.Coordinator):
     # Set Lagrange multipliers for equality constraints
     def set_initialeqLagmult(self):
         return np.array([])
-
-    # Set nonlinear constraints expressing the sphere manifold
-    # Used for the Euclidean solvers. Not used for the Riemannian solvers.
-    # def set_maniconstraints(self):
-    #     dataset_path = self.dataset_path
-    #     path = f'{dataset_path}/dim.csv'
-    #     dim = int(np.loadtxt(path))
-    #     manifun = lambda point: np.sum(point**2) - 1
-    #     manifoldconstraints = ManifoldConstraints(has_constraint = True if dim > 0 else False,
-    #                                   num_constraint = 1,
-    #                                   constraint = [manifun],
-    #                                   type = ['eq'])
-    #     return manifoldconstraints
-
 
 @hydra.main(version_base=None, config_path=".", config_name="config_simulation")
 def main(cfg):

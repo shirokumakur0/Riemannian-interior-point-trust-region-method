@@ -204,8 +204,8 @@ class NonlinearProblem(pymanopt.Problem):
 
 def tgtvecshapefun(manifold, x, vec):
     """
-    Note: need to add elif isinstance(manifold, pymanopt.manifolds.FixedRankEmbeeded)
-    if we deal with the fixed-rank embeeded manifold.
+    Note: need to add elif isinstance(manifold, pymanopt.manifolds.FixedRankEmbedded)
+    if we deal with the fixed-rank embedded manifold.
     """
     if isinstance(manifold, pymanopt.manifolds.Product):
         product_tgtvec = []
@@ -223,8 +223,8 @@ def tgtvecshapefun(manifold, x, vec):
 
 def vectorizefun(manifold, x, tgtvec):
     """
-    Note: need to add elif isinstance(manifold, pymanopt.manifolds.FixedRankEmbeeded)
-    if we deal with the fixed-rank embeeded manifold.
+    Note: need to add elif isinstance(manifold, pymanopt.manifolds.FixedRankEmbedded)
+    if we deal with the fixed-rank embedded manifold.
     """
     if isinstance(manifold, pymanopt.manifolds.Product):
         product_vec = np.array([])
@@ -431,15 +431,6 @@ def hessianspectrum(problem, x):
     vecfun = lambda v: v.reshape(-1)
     hessopr = LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(riemhess(tgtfun(reshapefun(dir))))))
 
-    # For speeding up (to do)
-    # tanvec_size = len(tgtvec_shape)
-    # if tanvec_size == 1:
-    #     hessopr = LinearOperator((n, n), matvec=lambda dir: tgtfun(riemhess(tgtfun(dir))))
-    # else:
-    #     reshapefun = lambda v: v.reshape(tgtvec_shape)
-    #     vecfun = lambda v: v.reshape(-1)
-    #     hessopr = LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(riemhess(tgtfun(reshapefun(dir))))))
-
     if dim <= n-2:
         w, v_vector = eigs(hessopr, k=dim, which='LM')
         v = []
@@ -480,7 +471,6 @@ def hessianspectrum(problem, x):
     w = w.real  # eigenvalues for Hermite matrix are always real.
     # Reduce the numerical error: change the imaginary part to zero if it is sufficiently small.
     tgtvec_type = problem.manifold.zero_vector(x).dtype
-    # v = np.where(np.abs(v.imag) <= threshold, v.real, v)
     v = v.astype(tgtvec_type)
     return w, v
 
@@ -494,22 +484,11 @@ def operatorspectrum(manifold, operator, x):
     tgtfun = lambda v: manifold.to_tangent_space(x, v)
     operatorx = lambda dir: operator(x, dir)
 
-    # reshapefun = lambda v: v.reshape(tgtvec_shape)
     reshapefun = lambda vec: tgtvecshapefun(manifold, x, vec)
     vecfun = lambda tgtvec: vectorizefun(manifold, x, tgtvec)
-    
-    n = len(vecfun(manifold.zero_vector(x)))
-    # vecfun = lambda v: v.reshape(-1)
-    linopr = LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(operatorx(tgtfun(reshapefun(dir))))))
 
-    # For speeding up (to do)
-    # tanvec_size = len(tgtvec_shape)
-    # if tanvec_size == 1:
-    #     hessopr = LinearOperator((n, n), matvec=lambda dir: tgtfun(riemhess(tgtfun(dir))))
-    # else:
-    #     reshapefun = lambda v: v.reshape(tgtvec_shape)
-    #     vecfun = lambda v: v.reshape(-1)
-    #     hessopr = LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(riemhess(tgtfun(reshapefun(dir))))))
+    n = len(vecfun(manifold.zero_vector(x)))
+    linopr = LinearOperator((n, n), matvec=lambda dir: vecfun(tgtfun(operatorx(tgtfun(reshapefun(dir))))))
 
     if dim <= n-2:
         w, v_vector = eigs(linopr, k=dim, which='LM')
@@ -518,7 +497,6 @@ def operatorspectrum(manifold, operator, x):
             vec = v_vector[:,j].real
             tgtvec = tgtfun(reshapefun(vec))
             v.append(tgtvec)
-        # v = np.array(v)
     else:
         if n <= 2:
             basis = tangentorthobasis(manifold, x, manifold.dim)
@@ -544,16 +522,11 @@ def operatorspectrum(manifold, operator, x):
         sort_indices = np.argsort(np.abs(w))
         sort_indices = sort_indices[::-1]
         w = w[sort_indices]
-        # v = np.array(v)
-        # v = v[sort_indices]
         v = [v[i] for i in sort_indices]
         w = w[:dim]
         v = v[:dim]
 
     w = w.real  # eigenvalues for Hermite matrix are always real.
-    # Reduce the numerical error: change the imaginary part to zero if it is sufficiently small.
-    # tgtvec_type = manifold.zero_vector(x).dtype
-    # v = v.astype(tgtvec_type)
     return w, v
 
 def operator2matrix(Mx, x, y, F, Bx=None, By=None, My=None):

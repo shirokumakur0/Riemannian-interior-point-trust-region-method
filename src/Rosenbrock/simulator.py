@@ -104,7 +104,6 @@ def callbackfun(problem, x, ineqLagmult, eqLagmult, eval):
     eval["condition_number"] = condnum
     return eval
 
-
 def manviofun(problem, x):
     manvio = 0
     rankp = np.linalg.matrix_rank(x)
@@ -118,7 +117,6 @@ class Simulator(base_simulator.Simulator):
     def add_solver_option(self, option):
         option["manviofun"] = manviofun
         option["callbackfun"] = callbackfun
-        # Can add "callbackfun" to option in the same manner.
         return option
 
     def run(self):

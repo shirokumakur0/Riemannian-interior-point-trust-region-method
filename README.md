@@ -1,6 +1,6 @@
 # Riemannian interior point trust region method
 
-Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior point trust region method for inequality-constrained optimization problems on Riemannian manifolds, arXiv, 2024".
+Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior point trust region method for second-order stationary points of Riemannian inequality-constrained optimization problems, arXiv, 2025".[[link]](https://arxiv.org/abs/2501.15419)
 
 Our implementation includes
 
@@ -39,6 +39,7 @@ During this process, the 'simulator' uses information from the 'dataset' folder 
 It also calls the 'problem_coordinator' and 'solver' modules to create and solve the optimization problem, respectively.
 
 1. Running the 'analyzer' module generates final outputs, which are saved in the 'result' folder.
+We assume that analyzer.ipynb is run on Google Colab.
 The 'analyzer' reads and analyzes the raw data from the 'intermediate' folder to produce these outputs. The outputs may include visualizations, graphs, or comparative tables, depending on the nature of the experiment.
 
 For a visual representation of the relationships and workflow among the modules, you can refer to the following:

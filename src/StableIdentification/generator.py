@@ -8,11 +8,10 @@ from scipy.stats import norm
 import copy
 import sys
 sys.path.append('./src/base')
-import problem_coordinator
 
 sys.path.append('./src/solver')
 import utils
-import RALM, RSQO
+import RALM
 
 class DataGenerator(dataset_generator.Generator):
     def generate(self, data):
@@ -28,33 +27,21 @@ class DataGenerator(dataset_generator.Generator):
                 h = self.cfg.h
                 scaling = self.cfg.scaling
 
-                # Set dim
-                # data.dim = [[dim]]  # to be compatible with 'save' function
-
-                # generate_Atrue
-                # generator_constraints
-                # generate_XnoisyX
                 data.dim = [[dim]]
                 true_J, true_R, true_Q, true_A = self.generate_trueJRQA(dim, scaling)
                 constset = self.generate_constraints(dim, true_A, oneboxratio, twoboxratio)
-                # print("X", X)
-                # print("noisyX", noisyX)
+
                 data.constset = constset
                 data.true_J = true_J
                 data.true_R = true_R
                 data.true_Q = true_Q
                 data.true_A = true_A
-                
+
                 for Xindex in Xset:
                     X, noisyX = self.generate_XnoisyX(dim, true_A, h, N, snr)
-                    # x0 = np.random.rand(dim)
-                    # x0 = x0 / np.linalg.norm(x0)
                     setattr(data, f'X_{Xindex}', X)
                     setattr(data, f'noisyX_{Xindex}', noisyX)
 
-                # initineqLagmult = self.generate_ineqLagmult(data)
-                # data.initineqLagmult = initineqLagmult
-                # self.initineqLagmult = copy.deepcopy(initineqLagmult)
                 initialpoints = self.cfg.initialpoints
                 for initpt in initialpoints:
                     initJ, initR, initQ, initA = self.generate_initprimaldualpoint(data, scaling)
@@ -65,50 +52,6 @@ class DataGenerator(dataset_generator.Generator):
                 break
             except Exception as e:
                 print(e)
-        # # Set hyperparameters
-        # N = self.cfg.N
-        # Xset = self.cfg.Xset
-        # oneboxratio = self.cfg.oneboxratio
-        # twoboxratio = self.cfg.twoboxratio
-        # snr = self.cfg.snr
-        # dim = self.cfg.dim
-        # h = self.cfg.h
-        # scaling = self.cfg.scaling
-
-        # # Set dim
-        # # data.dim = [[dim]]  # to be compatible with 'save' function
-
-        # # generate_Atrue
-        # # generator_constraints
-        # # generate_XnoisyX
-        # data.dim = [[dim]]
-        # true_J, true_R, true_Q, true_A = self.generate_trueJRQA(dim, scaling)
-        # constset = self.generate_constraints(dim, true_A, oneboxratio, twoboxratio)
-        # # print("X", X)
-        # # print("noisyX", noisyX)
-        # data.constset = constset
-        # data.true_J = true_J
-        # data.true_R = true_R
-        # data.true_Q = true_Q
-        # data.true_A = true_A
-        
-        # for Xindex in Xset:
-        #     X, noisyX = self.generate_XnoisyX(dim, true_A, h, N, snr)
-        #     # x0 = np.random.rand(dim)
-        #     # x0 = x0 / np.linalg.norm(x0)
-        #     setattr(data, f'X_{Xindex}', X)
-        #     setattr(data, f'noisyX_{Xindex}', noisyX)
-
-        # # initineqLagmult = self.generate_ineqLagmult(data)
-        # # data.initineqLagmult = initineqLagmult
-        # # self.initineqLagmult = copy.deepcopy(initineqLagmult)
-        # initialpoints = self.cfg.initialpoints
-        # for initpt in initialpoints:
-        #     initJ, initR, initQ, initA = self.generate_initprimaldualpoint(data, scaling)
-        #     setattr(data, f'initJ_{initpt}', initJ)
-        #     setattr(data, f'initR_{initpt}', initR)
-        #     setattr(data, f'initQ_{initpt}', initQ)
-        #     setattr(data, f'initA_{initpt}', initA)
         return data
 
     def generate_trueJRQA(self, dim, scaling):
@@ -187,14 +130,12 @@ class DataGenerator(dataset_generator.Generator):
             expAh = np.exp(i * h * true_A)
             X[:, i] = expAh @ x0
             noisyX[:, i] = self.awgn(X[:, i], snr)
-        # noisyX = self.awgn(X, snr)
         X = X / np.linalg.norm(x0)
         noisyX = noisyX / np.linalg.norm(noisyX[:, 0])
         return X, noisyX
 
     def generate_initprimaldualpoint(self, data, scaling):
         # Set hyperparameters
-
         interior_scaling = self.cfg.interior_scaling
         manifold = self.set_manifold()
         costfun = self.set_costfun()
@@ -302,11 +243,8 @@ class DataGenerator(dataset_generator.Generator):
         return costfun
 
     def set_ineqconstraints(self, interior_scaling):
-        # dataset_path = self.dataset_path
-        # constset = f'{dataset_path}/constset.csv'
         constset = self.constset
         mani = self.mani
-        # pymanopt_problem = pymanopt.Problem(mani, None)
 
         def build_onebox_constfuns(row, col, ls, rs):
             row = int(row)
@@ -357,7 +295,6 @@ class DataGenerator(dataset_generator.Generator):
 
     # Set equality constraints, which are empty in this problem
     def set_eqconstraints(self):
-        # return Constraints()
         return []
 
     # Set Lagrange multipliers for inequality constraints

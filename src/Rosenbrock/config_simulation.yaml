@@ -2,17 +2,6 @@
 # The file will be passed to an instance of Simulator() in which
 # an optimization problem is solved according to this configuration.
 
-# Tutorial for your project:
-# 1. Update the 'project_name' variable to match the actual name of your project.
-# 2. Customize the 'problem_initialpoint', 'problem_coordinator_name', and 'solver_name' to match your specific experiments.
-#    Make sure that 'problem_coordinator_name' corresponds to the file name of your ProblemCoordinator subclass in the project.
-# 3. Edit the 'solver_option'. 'solver_option-common' contains shared settings for all solvers,
-#    while 'solver_option-{solver_name}' contains specific settings for each individual solver you are using.
-# 4. If you plan to use multi-run functionality in the simulation, modify 'hydra-sweeper-params' to set the appropriate multi-run range.
-#     This allows you to conduct simulations with various configurations efficiently.
-#
-# Next, please proceed to the 'simulator.py'.
-
 problem_name: 'Rosenbrock'
 problem_instance: 1  # can be swept by multi-run
 problem_initialpoint: a  # can be swept by multi-run
@@ -37,10 +26,8 @@ solver_option:
       second_order_stationarity: False
       # TRS_solver: 'Exact_RepMat'  # 'Exact_RepMat', 'Exact_Operator', or 'tCG', 'Cauchy'
       # second_order_stationarity: True
-    # RALM:
-      # rho: 0.1
     RSQO:
-      quadoptim_eigvalcorr: 1e-2
+      quadoptim_eigvalcorr: 1e-2  # 1e-4
     RIPM:
       checkNTequation: True
 ### NOTE ###

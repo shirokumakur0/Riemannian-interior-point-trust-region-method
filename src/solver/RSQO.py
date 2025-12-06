@@ -5,10 +5,7 @@ from cvxopt import spmatrix, matrix, solvers
 
 import sys
 sys.path.append('./src/base')
-from base_solver import Solver # , BaseOutput
-
-# import matplotlib.pyplot as plt
-
+from base_solver import Solver
 
 # ell_1 penalty function for line search
 def ell_1penaltyfun(point, rho, costfun, ineqconstraints, eqconstraints):
@@ -70,15 +67,8 @@ class RSQO(Solver):
         default_option.update(option)  # putting the setting in the default_option before that in the argument
         self.option = default_option
         self.log = {}  # will be filled in self.add_log
-        # self.name = f"RSQO_{self.option['quadoptim_type']}_gamma{self.option['gamma']}_beta{self.option['beta']}"
         self.name = f"RSQO_{self.option['quadoptim_type']}_corr{self.option['quadoptim_eigvalcorr']:.0e}"
         self.initialize_wandb()
-
-        # if self.option["wandb_logging"]:
-        #     wandb.finish()
-        #     _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
-        #                     name = f"RSQO_{self.option['quadoptim_type']}",  # the name of the run
-        #                     config=self.option)  # save hyperparameters and metadata
 
     def preprocess(self, problem):
         xCur = copy.deepcopy(problem.initialpoint)
@@ -132,8 +122,6 @@ class RSQO(Solver):
                 return vec
             
             orthobasis = quadoptim_basisfun(manifold, xCur, manifold.dim)
-            # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
-            # Q, _ = hessianmatrix(Lagproblem, xCur, basis=orthobasis)
             Q = selfadj_operator2matrix(manifold, xCur, hessLagfunCur, orthobasis)
             eigenvalues, eigenvectors = np.linalg.eigh(Q)
             for i in range(len(eigenvalues)):
@@ -157,15 +145,12 @@ class RSQO(Solver):
             Q = spmatrix(w, range(len(w)), range(len(w)))
         elif option["quadoptim_type"] == 'eye':
             orthobasis = quadoptim_basisfun(manifold, xCur, manifold.dim)
-            # orthobasis, _ = orthogonalize(manifold, xCur, orthobasis)
             Q = np.eye(manifold.dim)
             Q = matrix(Q)
         else:
             raise ValueError("quadoptim_type must be 'reghess', 'reghess_operator', or 'eye'.")
 
         # Compute the first-order term in the objective function
-        # gradf = gradcostfun
-        # gradobjxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradf(xCur))
         gradobjxCur = gradcostfun(xCur)
         p = np.empty(len(orthobasis))
         for i in range(len(orthobasis)):
@@ -182,7 +167,6 @@ class RSQO(Solver):
                 ineqcstrfun = ineqconstraints[i]
                 h[i] = -ineqcstrfun(xCur)
                 gradineqcstrfun = gradineqconstraints[i]
-                # gradineqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradineqcstrfun(xCur))
                 gradineqxCur = gradineqcstrfun(xCur)
                 for j in range(len(orthobasis)):
                     G[i,j] = manifold.inner_product(xCur, gradineqxCur, orthobasis[j])
@@ -200,7 +184,6 @@ class RSQO(Solver):
                 eqcstrfun = eqconstraints[i]
                 b[i] = -eqcstrfun(xCur)
                 gradeqcstrfun = gradeqconstraints[i]
-                # gradeqxCur = manifold.euclidean_to_riemannian_gradient(xCur, gradeqcstrfun(xCur))
                 gradeqxCur = gradeqcstrfun(xCur)
                 for j in range(len(orthobasis)):
                     A[i,j] = manifold.inner_product(xCur, gradeqxCur, orthobasis[j])
@@ -252,51 +235,7 @@ class RSQO(Solver):
         linesearch_status = 1
         linesearch_counter = 0
 
-        # def plot_linesearch(fun, retr, x, direction, step=50, s_max=1.0,
-        #                     logy=False, show_min=True, savepath="linesearch.png"):
-        #     ss = np.linspace(0.0, s_max, step + 1)
-        #     fs = np.empty_like(ss)
-
-        #     for k, s in enumerate(ss):
-        #         newx = retr(x, s * direction)
-        #         fs[k] = float(fun(newx))  # 念のためfloat化
-
-        #     fig, ax = plt.subplots()
-        #     y = np.log(fs) if logy else fs
-        #     ax.plot(ss, y, markersize=3, linewidth=1)
-        #     ax.set_xlabel("step size s")
-        #     ax.set_ylabel("log f(retr(x, s*dir))" if logy else "f(retr(x, s*dir))")
-        #     ax.set_title("Line search trace")
-        #     ax.grid(True)
-
-        #     if show_min:
-        #         kmin = np.argmin(fs)
-        #         ax.scatter([ss[kmin]], [y[kmin]], marker="x", s=80)
-        #         ax.annotate(f"min@{ss[kmin]:.3g}",
-        #                     (ss[kmin], y[kmin]),
-        #                     textcoords="offset points", xytext=(6, 6))
-
-        #     fig.tight_layout()
-        #     fig.savefig(savepath, dpi=200, bbox_inches="tight")
-        #     plt.close(fig)  # メモリ節約のため閉じる
-
-        #     print("saved:", savepath)
-        #     return ss, fs
-        # plot_linesearch(
-        #     fun=lambda z: ell_1penaltyfun(z, rho, costfun, ineqconstraints, eqconstraints),
-        #     retr=manifold.retraction,
-        #     x=xCur,
-        #     direction=dir,
-        #     step=50,
-        #     s_max=0.02,
-        #     logy=False,
-        #     show_min=True,
-        #     savepath="linesearch.png"
-        # )
-        # input()
-
         while newf > (f0 - gammadf0) and np.abs(newf - (f0 - gammadf0)) > option["linesearch_threshold"]:
-        # while newf > f0 - gammadf0:
             linesearch_counter += 1
             if linesearch_counter >= option["linesearch_max"]:
                 linesearch_status = 0
@@ -374,7 +313,7 @@ class RSQO(Solver):
                     print(reason)
                 break
 
-            # # Count an iteration
+            # Count an iteration
             iteration += 1
 
             if do_exit_on_error:
@@ -450,11 +389,11 @@ class RSQO(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/PackingCircles')
+    sys.path.append('./src/NonnegPCA')
     import coordinator
 
     # Call a problem coordinator
@@ -476,5 +415,4 @@ def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
 if __name__=='__main__':
     main()
-    
     # cProfile.run("main()", sort="tottime")

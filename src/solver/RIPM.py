@@ -8,8 +8,6 @@ import sys
 sys.path.append('./src/base')
 from base_solver import Solver, BaseOutput
 
-# import matplotlib.pyplot as plt
-
 warnings.filterwarnings("ignore", message="Output seems independent of input.")
 
 def barFx(x, c, gradfuns, manifold):
@@ -149,8 +147,6 @@ class RIPM(Solver):
             'KrylovMaxIteration': 1000,
             'checkNTequation': False,
             'basisfun': lambda manifold, x: tangentorthobasis(manifold, x, manifold.dim),
-            # 'RepMat_exit_warning_triggered': False,
-            # 'egradlincomb': False,
             'do_euclidean_lincomb': False,
 
             # Line search setting
@@ -187,16 +183,6 @@ class RIPM(Solver):
         type = "Krylov" if self.option["KrylovIterMethod"] else "RepMat"
         self.name = f"RIPM_{type}_gamma{self.option['gamma']}_beta{self.option['linesearch_beta']}_theta{self.option['linesearch_theta']}"
         self.initialize_wandb()
-
-        # if self.option["wandb_logging"]:
-        #     wandb.finish()
-        #     if self.option["KrylovIterMethod"]:
-        #         name = "RIPM_Krylov"
-        #     else:
-        #         name = "RIPM_RepMat"
-        #     _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
-        #                      name = name,
-        #                      config=self.option)  # save hyperparameters and metadata
 
     def xyzs_manifold_zero_vector(self, xyzs):
         x, y, z, s = xyzs
@@ -258,8 +244,6 @@ class RIPM(Solver):
         ydim = y_manifold.dim
         x, y  = xy
         c, q = cq
-        # basis = [pymanopt.manifolds.product._ProductTangentVector([xb, y_manifold.zero_vector(y)]) for xb in xbasis]\
-            # + [pymanopt.manifolds.product._ProductTangentVector([x_manifold.zero_vector(x), yb]) for yb in ybasis]
 
         # Under the basis, the following codes return a saddle-point
         # linear system whose matrix has the form
@@ -303,7 +287,6 @@ class RIPM(Solver):
         c_vec = tangent2vec(x_manifold, x, xbasis, c)
         q_vec = tangent2vec(y_manifold, y, ybasis, q)
         cq_vec = np.concatenate([c_vec, q_vec])
-        # cq_vec = tangent2vec(xy_manifold, xy, basis, cq)
         sol_vec = linalg.solve(T_mat, cq_vec, assume_a='sym')
         NTdirx = x_manifold.zero_vector(x)
         NTdiry = y_manifold.zero_vector(y)
@@ -313,13 +296,9 @@ class RIPM(Solver):
         for j in range(len(ybasis)):
             NTdiry = NTdiry + sol_vec[xdim+j] * ybasis[j]
         NTdir = [NTdirx, NTdiry]
-        # NTdir = xy_manifold.zero_vector(xy)
-        # for i in range(len(basis)):
-            # NTdir = NTdir + sol_vec[i] * basis[i]
+
         RepresentMat = T_mat
         RepresentMatOrder = x_manifold.dim + y_manifold.dim
-
-        # print("Aw_mat cond:", Aw_mat)
 
         return NTdir, RepresentMat, RepresentMatOrder
     
@@ -334,7 +313,6 @@ class RIPM(Solver):
         v = v0  # initialization
         r = b - A(v)  # r are residuals.
         p = copy.deepcopy(r)  # p are conjugate directions.
-        # self.xy_manifold_norm(x, b)
         b_norm = self.xy_manifold_norm(xy, b)
         r_norm = self.xy_manifold_norm(xy, r)
         rel_res = r_norm / b_norm
@@ -388,7 +366,6 @@ class RIPM(Solver):
         # Set initial points
         xCur = copy.deepcopy(problem.initialpoint)
         yCur = copy.deepcopy(problem.initialeqLagmult)
-        # ineqnum = ineqconstraints.num_constraint
         if heuristic_z_s:
             zCur = np.ones(num_ineqconstraints)
             zCur[0] =np.real(np.sqrt((num_ineqconstraints - 1)/(num_ineqconstraints/desired_tau_1 - 1)))
@@ -403,7 +380,7 @@ class RIPM(Solver):
         The original RIPM implementation by Lai-Yoshise is restricted to the embedded manifold.
         There, we can efficiently compute the Riemannian gradient and Hessian of composite functions
         by summing up the euclidean ones of the objective function and constraints and projecting them onto the tangent space.
-        We follow the same approach where egradlincomb is True.
+        We follow the same approach where do_euclidean_lincomb is True.
         On the other hands, we also compute the Riemannian gradient and Hessian of the composite functions
         by calculating the Euclidean gradient and Hessian of each component, projecting them onto the tangent space, and then summing them up.
         Although this approach is less efficient than the former, it is more general and can be applied to any manifold.
@@ -441,32 +418,20 @@ class RIPM(Solver):
         self.KKTVectorField = build_KKTVectorField(gradLagrangian, ineqconstraints, eqconstraints)
 
         # Set the product manifolds
-        """Note: since nested product manifolds are not supported in pymanopt,
-        the following are not compatible with manifold is an instance of pymanopt.Product().
-        We commented out xyzs_manifold, xy_manifold, and their related manipulations.
-        Instead, we define x_, y_, z_, s_manifolds."""
         self.x_manifold = manifold
         self.y_manifold = pymanopt.manifolds.Euclidean(num_eqconstraints)
         self.z_manifold = pymanopt.manifolds.Euclidean(num_ineqconstraints)
         self.s_manifold = pymanopt.manifolds.Euclidean(num_ineqconstraints)
-        # xyzs_manifold = pymanopt.manifolds.Product([manifold,
-        #                                             pymanopt.manifolds.Euclidean(num_eqconstraints),
-        #                                             pymanopt.manifolds.Euclidean(num_ineqconstraints),
-        #                                             pymanopt.manifolds.Euclidean(num_ineqconstraints)])
-        # xy_manifold = pymanopt.manifolds.Product([manifold,
-        #                                           pymanopt.manifolds.Euclidean(num_eqconstraints)])
 
         # Set initial points on xyzs_manifold
         xyzsCur = [xCur, yCur, zCur, sCur]
         Ehat = pymanopt.manifolds.product._ProductTangentVector(self.xyzs_manifold_zero_vector(xyzsCur))
-        # Ehat = xyzs_manifold.zero_vector(xyzsCur)
         ehat = np.ones(num_ineqconstraints)
         Ehat[3] = ehat
         KKTvec = self.KKTVectorField(xyzsCur)
         PhiCur = self.xyzs_manifold_norm(xyzsCur, KKTvec)**2
 
         # Construct parameters sigma to controls the final convergence rate
-        # sigma = min(0.5, np.real(np.sqrt(PhiCur)))
         sigma = min(0.5, np.real(np.sqrt(PhiCur)**0.5))
         rho = (zCur @ sCur) / num_ineqconstraints
         self.gamma = copy.deepcopy(option["gamma"])
@@ -544,12 +509,7 @@ class RIPM(Solver):
         else:
             xbasis = basisfun(manifold, xCur)
             ybasis = np.eye(num_eqconstraints)
-            NTdirdxdy, represent_mat, _ = self.RepresentMatMethod(OperatorAw, OperatorHxaj, OperatorHx, cq, xyCur, xbasis, ybasis)
-
-
-
-            # print("RepresentMat cond:", type(represent_mat))
-
+            NTdirdxdy, _, _ = self.RepresentMatMethod(OperatorAw, OperatorHxaj, OperatorHx, cq, xyCur, xbasis, ybasis)
 
         # Recovery dz and ds.
         Ntdirdz = (zCur * (Gxaj(xCur, NTdirdxdy[0]) + KKTvec[2]) + sigma * rho * ehat - KKTvec[3]) / sCur
@@ -572,7 +532,6 @@ class RIPM(Solver):
                 nablaFds = z * ds + s * dz
                 nablaF = pymanopt.manifolds.product._ProductTangentVector([nablaFdx, nablaFdy, nablaFdz, nablaFds])
                 return nablaF
-            
 
             def xyzs_operator2matrix(x, y, z, s, F, xbasis, ybasis, zbasis, sbasis):
                 n = len(xbasis) + len(ybasis) + len(zbasis) + len(sbasis)
@@ -606,18 +565,15 @@ class RIPM(Solver):
             idxmin = np.argmin(np.abs(eigvals))
             CovDerivKKT_minabseigval = eigvals[idxmin]
 
+            # # DEBUG for checking the correctness of CovarDerivKKT_mat
             # def lincomb_basis(coeffs):
-            #     """coeffs (長さ n の1次元 array) から
-            #     Σ_i coeffs[i] * basis[i] を作る。
-            #     Pymanopt の ProductTangentVector にスカラー倍 & 加法が定義されていると仮定。
-            #     """
-            #     v = 0 * CovarDerivKKT_basis[0]  # ゼロベクトルを作る適当な方法
+            #     v = 0 * CovarDerivKKT_basis[0]
             #     for alpha, b in zip(coeffs, CovarDerivKKT_basis):
             #         v = v + alpha * b
             #     return v
 
             # for trial in range(10):
-            #     c = np.random.randn(xyzsdim)  # ランダム係数
+            #     c = np.random.randn(xyzsdim)
             #     dw = lincomb_basis(c)
 
             #     F1 = CovarDerivKKT(xCur, yCur, zCur, sCur, dw)
@@ -652,7 +608,6 @@ class RIPM(Solver):
             NTeq_rhs = -KKTvec + sigma * rho * Ehat
             nablaF_NTdir = nablaF(NTdir)
             NTdir_error1 = self.xyzs_manifold_norm(xyzsCur, nablaF_NTdir - NTeq_rhs)
-            # NTdir_error1 = xyzs_manifold.norm(xyzsCur, nablaF_NTdir - NTeq_rhs)
             verbosity = self.option["verbosity"]
             if verbosity >= 2:
                 print("NTdir_error1", NTdir_error1)
@@ -663,7 +618,6 @@ class RIPM(Solver):
             # NTdir_error2 should be zero.
             gradphi = 2 * nablaFaj(KKTvec)
             val_innerproduct = self.xyzs_manifold_inner_product(xyzsCur, gradphi, NTdir)
-            # val_innerproduct = xyzs_manifold.inner_product(xyzsCur, gradphi, NTdir)
             NTdir_error2 = abs(val_innerproduct - 2*(sigma*rho*(zCur @ sCur)-PhiCur))
             if verbosity >= 2:
                 print("NTdir_error2", NTdir_error2)
@@ -671,8 +625,6 @@ class RIPM(Solver):
             # Record Item: record norm of NTdirl; angle between - grad phi and NTdir.
             Norm_gradphi = self.xyzs_manifold_norm(xyzsCur, gradphi)
             NTdir_norm = self.xyzs_manifold_norm(xyzsCur, NTdir)
-            # Norm_gradphi = xyzs_manifold.norm(xyzsCur, gradphi)
-            # NTdir_norm = xyzs_manifold.norm(xyzsCur, NTdir)
             NTdir_angle = - val_innerproduct / (Norm_gradphi * NTdir_norm)
             NTdir_info = [NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle, CovDerivKKT_minabseigval]
 
@@ -689,49 +641,6 @@ class RIPM(Solver):
         gradfCur = costgradfun(xCur)
         gradfNTdir = problem.manifold.inner_product(xCur, gradfCur, NTdir[0])
 
-        # def plot_linesearch(fun, retr, x, direction, step=50, s_max=1.0,
-        #                     logy=False, show_min=True, savepath="linesearch.png"):
-        #     ss = np.linspace(0.0, s_max, step + 1)
-        #     fs = np.empty_like(ss)
-
-        #     for k, s in enumerate(ss):
-        #         newx = retr(x, s * direction)
-        #         fs[k] = float(fun(newx))  # 念のためfloat化
-
-        #     fig, ax = plt.subplots()
-        #     y = np.log(fs) if logy else fs
-        #     ax.plot(ss, y, markersize=3, linewidth=1)
-        #     ax.set_xlabel("step size s")
-        #     ax.set_ylabel("log f(retr(x, s*dir))" if logy else "f(retr(x, s*dir))")
-        #     ax.set_title("Line search trace")
-        #     ax.grid(True)
-
-        #     if show_min:
-        #         kmin = np.argmin(fs)
-        #         ax.scatter([ss[kmin]], [y[kmin]], marker="x", s=80)
-        #         ax.annotate(f"min@{ss[kmin]:.3g}",
-        #                     (ss[kmin], y[kmin]),
-        #                     textcoords="offset points", xytext=(6, 6))
-
-        #     fig.tight_layout()
-        #     fig.savefig(savepath, dpi=200, bbox_inches="tight")
-        #     plt.close(fig)  # メモリ節約のため閉じる
-
-        #     print("saved:", savepath)
-        #     return ss, fs
-        # plot_linesearch(
-        #     fun=lambda xyzsNew: self.xyzs_manifold_norm(xyzsNew, KKTVectorField(xyzsNew))**2,
-        #     retr=lambda xyzs, dir: self.xyzs_manifold_retraction(xyzs, dir),
-        #     x=xyzsCur,
-        #     direction=NTdir,
-        #     step=50,
-        #     s_max=1,
-        #     logy=False,
-        #     show_min=True,
-        #     savepath="linesearch.png"
-        # )
-        # input()
-
         normNTdirx = self.x_manifold.norm(xCur, NTdir[0])
         normNTdirw = self.xyzs_manifold_norm(xyzsCur, NTdir)
 
@@ -740,17 +649,10 @@ class RIPM(Solver):
         r = 0
         while True:
             xyzsNew = self.xyzs_manifold_retraction(xyzsCur, stepsize * NTdir)
-            # xyzsNew = xyzs_manifold.retraction(xyzsCur, stepsize * NTdir)
             KKTvec = KKTVectorField(xyzsNew)
             PhiNew = self.xyzs_manifold_norm(xyzsNew, KKTvec)**2
-            # PhiNew = xyzs_manifold.norm(xyzsNew, KKTvec)**2
             zNew = xyzsNew[2]
             sNew = xyzsNew[3]
-            # if PhiNew - PhiCur <= ls_beta * stepsize * ls_RightItem and fun_1(zNew, sNew) >= 0:
-            #     if ls_execute_fun2 and fun_2(zNew, sNew, PhiNew) >= 0:
-            #         break
-            #     else:
-            #         break
             if (PhiNew - PhiCur <= ls_beta * stepsize * ls_RightItem
                     and fun_1(zNew, sNew) >= 0
                     and (not ls_execute_fun2 or fun_2(zNew, sNew, PhiNew) >= 0)):
@@ -768,16 +670,12 @@ class RIPM(Solver):
         # Update points on xyzs_manifold
         xyzsCur = [xCur, yCur, zCur, sCur]
         Ehat = pymanopt.manifolds.product._ProductTangentVector(self.xyzs_manifold_zero_vector(xyzsCur))
-        # Ehat = xyzs_manifold.zero_vector(xyzsCur)
         ehat = np.ones(num_ineqconstraints)
         Ehat[3] = ehat
         KKTvec = KKTVectorField(xyzsCur)
         PhiCur = self.xyzs_manifold_norm(xyzsCur, KKTvec)**2
-        # PhiCur = xyzs_manifold.norm(xyzsCur, KKTvec)**2
-        # Update points on xy_manifold
         xyCur = [xCur, yCur]
         self.v0 = pymanopt.manifolds.product._ProductTangentVector(self.xy_manifold_zero_vector(xyCur))
-        # v0 = xy_manifold.zero_vector(xyCur)
 
         # Update parameters
         sigma = min(0.5, np.sqrt(PhiCur)**0.5)
@@ -931,10 +829,8 @@ class RIPM(Solver):
         solver_status["rho"] = rho
 
         maxabsLagmult = float('-inf')
-        # if ineqconstraints.has_constraint:
         for Lagmult in ineqLagmult:
             maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
-        # if eqconstraints.has_constraint:
         for Lagmult in eqLagmult:
             maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
         solver_status["maxabsLagmult"] = maxabsLagmult
@@ -958,7 +854,7 @@ class RIPM(Solver):
                 solver_status["KrylovIterMethod"] = None
                 solver_status["KrylovIterMethod_Iter"] = None
                 solver_status["KrylovIterMethod_RelRes"] = None
-        
+
         if checkNTequation:
             if NTdir_info is not None:
                 NTdir_error1, NTdir_error2, NTdir_norm, NTdir_angle, CovDerivKKT_minabseigval = NTdir_info
@@ -976,11 +872,11 @@ class RIPM(Solver):
 
         return solver_status
 
-@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
-def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
+@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+def main(cfg):  # Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/PackingCircles')
+    sys.path.append('./src/NonnegPCA')
     import coordinator
 
     # Call a problem coordinator

@@ -9,7 +9,7 @@ import problem_coordinator
 sys.path.append('./src/solver')
 import utils
 
-# Problem coordinator for nonnegative principal component analysis
+# Problem coordinator for stable linear system identification
 class Coordinator(problem_coordinator.Coordinator):
     def run(self):
         manifold = self.set_manifold()
@@ -45,8 +45,6 @@ class Coordinator(problem_coordinator.Coordinator):
         self.mani = mani
         return mani
 
-
-
     # Set a cost function
     def set_costfun(self):
         mani = self.mani
@@ -66,8 +64,8 @@ class Coordinator(problem_coordinator.Coordinator):
                     - XP: The matrix excluding the first column of Xori (X prime).
             """
             N = Xori.shape[1]
-            X = Xori[:, :N-1]  # 最後の列を除く
-            XP = Xori[:, 1:N]  # 最初の列を除く
+            X = Xori[:, :N-1]
+            XP = Xori[:, 1:N]
             return X, XP
 
         X = None
@@ -155,7 +153,6 @@ class Coordinator(problem_coordinator.Coordinator):
 
     # Set equality constraints, which are empty in this problem
     def set_eqconstraints(self):
-        # return Constraints()
         return []
 
     # Set Lagrange multipliers for inequality constraints

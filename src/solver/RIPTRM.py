@@ -37,13 +37,11 @@ class _ProductAmbientVector(ndarraySequenceMixin, list):
     def __neg__(self):
         return [-val for val in self]
 
+# From Pymanopt's source code
 def truncated_conjugate_gradient(
     manifold, hess, x, fgradx, eta, Delta, theta, kappa, mininner, maxinner, preconditioner, use_rand=False
     ):
-    # manifold = problem.manifold
     inner = manifold.inner_product
-    # hess = problem.riemannian_hessian
-    # preconditioner = problem.preconditioner
 
     if not use_rand:  # and therefore, eta == 0
         Heta = manifold.zero_vector(x)
@@ -319,11 +317,11 @@ class RIPTRM(Solver):
             'rho': 0.1,  # threshold for the acceptance of the trial point
             'reduction_regularization': 1e3,
             'gamma': 0.25,  # the factor to shrink the trust region radius if the primal point is infeasible
-            'forcing_function_Lagrangian': lambda mu: max(mu, 1e-14), # lambda mu: max(mu, 1e-14), # Exact_RepMat: max(1e-3 * mu, 1e-14), tCG max(1e-6 * mu, 1e-14)?
-            'forcing_function_complementarity': lambda mu: max(1e-3 * mu, 1e-14), # lambda mu: max(1e-4 * mu, 1e-14), # Exact_RepMat: max(1e-3 * mu, 1e-14), tCG ax(1e-6 * mu, 1e-14)?
-            'forcing_function_second_order': lambda mu: mu, # 100 * mu,
-            'min_barrier_parameter': 1e-15,  # 1e-15
-            'TRS_solver': 'Exact_RepMat',  # 'Exact_RepMat', 'Exact_Operator', or 'tCG', 'Cauchy'
+            'forcing_function_Lagrangian': lambda mu: max(mu, 1e-14),
+            'forcing_function_complementarity': lambda mu: max(1e-3 * mu, 1e-14),
+            'forcing_function_second_order': lambda mu: mu,
+            'min_barrier_parameter': 1e-15,
+            'TRS_solver': 'Exact_RepMat',  # 'Exact_RepMat' or 'tCG'
             'second_order_stationarity': True,
             'do_euclidean_lincomb': False,
             'is_euclidean_embedded': False,
@@ -333,9 +331,9 @@ class RIPTRM(Solver):
             'tCG_kappa': 0.1,
             'tCG_mininner': 1,
             'checkTRSoptimality': False,
-            'initial_barrier_parameter': 0.1, #0.1,
-            'barrier_parameter_update_r': 0.01, # 0.01
-            'barrier_parameter_update_c': 0.5, # 0.5,
+            'initial_barrier_parameter': 0.1,
+            'barrier_parameter_update_r': 0.01,
+            'barrier_parameter_update_c': 0.5,
             'barrier_parameter_update_b': 0.8,
             'do_simple_barrier_parameter_update': True,
             'const_left': 0.5,
@@ -365,12 +363,6 @@ class RIPTRM(Solver):
         self.log = {}  # will be filled in self.add_log
         self.name = f"RIPTRM_{self.option['TRS_solver']}"
         self.initialize_wandb()
-
-        # if self.option["wandb_logging"]:
-        #     wandb.finish()
-        #     _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
-        #                      name = f"RIPTRM_{self.option['TRS_solver']}",  # the name of the run
-        #                      config=self.option)  # save hyperparameters and metadata
 
     def check_TRS_optimality(self, xCur, TR_radius, dxCur, lam1, HwCur, cxCur, manifold):
         basisfun = self.option["basisfun"]
@@ -598,7 +590,6 @@ class RIPTRM(Solver):
 
         xfeasi_criterion = np.all(costineqconstvecxNew > 0)
         yfeasi_criterion = np.all(yNew > 0)
-        # normgradLagfun = manifold.norm(xNew, gradLagrangefun(xNew, yNew))
         normgradLagfun = manifold.norm(xNew, self.gradLagrangefun(problem, xNew, yNew, do_euclidean_lincomb))
         normgradLagfun_criterion = normgradLagfun <= stopping_criterion_Lagrangian
         complementarity = np.linalg.norm(yNew * costineqconstvecxNew - mu)
@@ -633,7 +624,6 @@ class RIPTRM(Solver):
         output["mineigval_criterion"] = mineigval_criterion
         output["minxfeasi"] = min(costineqconstvecxNew)
         output["minyfeasi"] = min(yNew)
-        # output["normgradLagfun"] = normgradLagfun
         output["compl"] = complementarity
         output["mineigvalHw"] = mineigvalHwNew
         return output
@@ -658,7 +648,7 @@ class RIPTRM(Solver):
                 costineqconstvecx = costineqconstvecfun(x)
             return costfun(x) - mu * np.sum(np.log(costineqconstvecx))
 
-        # compute the cost and inequality constraints at the new point
+        # Compute the cost and inequality constraints at the new point
         self.costxNew = costfun(xNew)
         self.costineqconstvecxNew = costineqconstvecfun(xNew)
 
@@ -793,7 +783,7 @@ class RIPTRM(Solver):
         return exitflag, xNext, yNext, TR_radiusNext, inner_info
 
     def inner_run(self, problem, outer_iteration, outer_start_time, x_initial, y_initial, mu, initial_TR_radius, inner_option):
-        # # Set initial point
+        # Set initial point
         xCur, yCur, inner_xPrev, TR_radius = self.inner_preprocess(x_initial, y_initial, initial_TR_radius)
         inner_xPrev = copy.deepcopy(xCur)
         inner_iteration = 0
@@ -831,7 +821,6 @@ class RIPTRM(Solver):
             # Check stopping criteria (time and iteration)
             if self.option["inner_maxtime"] is None:
                 inner_maxtime = self.option["maxtime"] # outer's maxtime
-                # run_time = time.time() - outer_start_time
                 run_time = time.time() - outer_start_time - self.excluded_time
             else:
                 inner_maxtime = self.option["inner_maxtime"]
@@ -887,7 +876,7 @@ class RIPTRM(Solver):
         barrier_parameter_update_c = option['barrier_parameter_update_c']
         barrier_parameter_update_b = option['barrier_parameter_update_b']
         do_simple_barrier_parameter_update = option['do_simple_barrier_parameter_update']
-        
+
         # Update the inner option
         inner_option = {}
         inner_option["stopping_criterion_Lagrangian"] = forcing_function_Lagrangian(muCur)
@@ -937,21 +926,6 @@ class RIPTRM(Solver):
         manviofun = option["manviofun"]
         callbackfun = option["callbackfun"]
         do_exit_on_error = self.option['do_exit_on_error']
-        # eval_log = evaluation(problem, xPrev, xCur, yCur, [], manviofun, callbackfun)
-        
-        # solver_log = self.solver_status(
-        #               yCur,
-        #               muCur,
-        #               save_inner_iteration,
-        #               inner_info=None,
-        #               )
-        # self.add_log(iteration, start_time, eval_log, solver_log)
-
-        # # Preparation for check stopping criteria
-        # residual = eval_log["residual"]
-        # tolresid = option["tolresid"]
-        # residual_criterion = (residual <= tolresid, "KKT residual tolerance reached; current residual=" + str(residual) + " and tolresid=" + str(tolresid))
-        # stopping_criteria =[residual_criterion]
 
         # Outer iteration
         while True:
@@ -992,24 +966,6 @@ class RIPTRM(Solver):
                     break
             else:
                 xCur, yCur, muCur, TR_radius, inner_info = self.outer_step(problem, xCur, yCur, muCur, TR_radius, iteration, start_time)
-
-            # # Set evalxPrev only for evaluation if necessary
-            # evalxPrev = inner_xPrev if save_inner_iteration or inner_info["inner_status"] != "converged" else xPrev
-            # # Evaluation and logging
-            # eval_log = evaluation(problem, evalxPrev, xCur, yCur, [], manviofun, callbackfun)
-            # solver_log = self.solver_status(
-            #           yCur,
-            #           muCur,
-            #           save_inner_iteration,
-            #           inner_info = inner_info,
-            #           )
-            # self.add_log(iteration, start_time, eval_log, solver_log)
-
-            # Update previous x and residual
-            # xPrev = copy.deepcopy(xCur)
-            # residual = eval_log["residual"]
-            # residual_criterion = (residual <= tolresid, "KKT residual tolerance reached; current residual=" + str(residual) + " and tolresid=" + str(tolresid))
-            # stopping_criteria =[residual_criterion]
 
         # After exiting while loop, we return the final output
         output = self.postprocess(xCur, yCur, [])
@@ -1067,11 +1023,11 @@ class RIPTRM(Solver):
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../Rosenbrock", config_name="config_simulation")
+@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
 def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
 
     # Import a problem set from NonnegPCA
-    sys.path.append('./src/Rosenbrock')
+    sys.path.append('./src/NonnegPCA')
     import coordinator
 
     # Call a problem coordinator

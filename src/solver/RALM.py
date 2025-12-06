@@ -62,12 +62,6 @@ class RALM(Solver):
         self.name = f"RALM_{self.option['innersubsolver']}"
         self.initialize_wandb()
 
-        # if self.option["wandb_logging"]:
-        #     wandb.finish()
-        #     _ = wandb.init(project=self.option["wandb_project"],  # the project name where this run will be logged
-        #                     name = f"RALM_{self.option['innersubsolver']}",  # the name of the run
-        #                     config=self.option)  # save hyperparameters and metadata
-
     def set_LagEvals(self, problem):
         # Set ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points (the update is based on the paper by Yamakawa and Sato.)
         # Otherwise, use ineqLagCur and eqLagCur for the evaluation based on the paper by Liu and Boumal.
@@ -85,10 +79,6 @@ class RALM(Solver):
             eqLagEval = self.eqLagCur
         return ineqLagEval, eqLagEval
 
-    # def assert_hasattr(self, obj, *args):
-    #     for arg in args:
-    #         assert hasattr(obj, arg), f"Missing attribute: {arg}"
-
     def preprocess(self, problem):
         # Set initial points
         xCur = copy.deepcopy(problem.initialpoint)
@@ -99,7 +89,6 @@ class RALM(Solver):
         option = self.option
         self.rho = copy.deepcopy(self.option["rho"])
         self.oldacc = float('inf')
-
 
         # Construct ineqLagCurUnbd and eqLagCurUnbd if RALM aims to find AKKT points.
         # The update is based on the paper by Yamakawa and Sato (https://link.springer.com/article/10.1007/s10589-021-00336-w).
@@ -188,7 +177,6 @@ class RALM(Solver):
             )
 
         # Construct the subproblem and the subsolver
-        # subproblem = pymanopt.Problem(manifold=manifold, cost=costalmfun, riemannian_gradient=gradalmfun)
         class_subsolver = getattr(pymanopt.optimizers, innersubsolver)
         subsolver = class_subsolver(max_iterations=maxInnerIter,
                                     min_step_size=innerminstepsize,
@@ -230,7 +218,7 @@ class RALM(Solver):
                 self.eqLagCur[idx] = min(bound, max(-bound, self.eqLagCur[idx] + self.rho * eqcost))
 
         # Update rho.
-        # Attention: the following update strategy has been adopted
+        # Note: the following update strategy has been adopted
         # in the Matlab imprementation in Github by losangle (https://github.com/losangle/Optimization-on-manifolds-with-extra-constraints)
         # In the original paper by Liu and Boumal (https://arxiv.org/abs/1901.10000),
         # the correct condition seems to be 'OuterIter != 0 and newacc > tau * oldacc'
@@ -256,13 +244,9 @@ class RALM(Solver):
     # Running an experiment
     def run(self, problem):
         assert isinstance(problem, NonlinearProblem), "Input problem must be an instance of NonlinearProblem"
-        # self.assert_hasattr(self.option, 'LagmultUnbdUpdate', 'verbosity', 'do_exit_on_error', 'manviofun', 'callbackfun', 'wandb_logging')
 
         xCur, ineqLagEval, eqLagEval = self.preprocess(problem)
         xPrev = copy.deepcopy(xCur)
-        # self.assert_hasattr(self, 'ineqLagCur', 'eqLagCur', 'rho', 'oldacc', 'thetatolgradnorm')
-        # if self.option['LagmultUnbdUpdate']:
-        #     self.assert_hasattr(self, 'ineqLagCurUnbd', 'eqLagCurUnbd')
 
         OuterIteration = 0
         start_time = time.time()
@@ -291,8 +275,7 @@ class RALM(Solver):
             else:
                 eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
                 solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
-            # eval_log = evaluation(problem, xPrev, xCur, ineqLagEval, eqLagEval, manviofun, callbackfun)
-            # solver_log = self.solver_status(self.rho, ineqLagEval, eqLagEval)
+
             log_end_time = time.time()
             excluded_time += log_end_time - log_start_time
             self.add_log(OuterIteration, start_time, eval_log, solver_log, excluded_time)
@@ -342,21 +325,19 @@ class RALM(Solver):
         solver_status["rho"] = rho
         maxabsLagmult = float('-inf')
 
-        # if ineqconstraints.has_constraint:
         for Lagmult in ineqLagmult:
             maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
-        # if eqconstraints.has_constraint:
         for Lagmult in eqLagmult:
             maxabsLagmult = max(maxabsLagmult, abs(Lagmult))
 
         solver_status["maxabsLagmult"] = maxabsLagmult
         return solver_status
 
-@hydra.main(version_base=None, config_path="../PackingCircles", config_name="config_simulation")
-def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
+@hydra.main(version_base=None, config_path="../NonnegPCA", config_name="config_simulation")
+def main(cfg):  # Mainly for debugging
 
-    # Import a problem set from NonnegPCA
-    sys.path.append('./src/PackingCircles')
+    # Import a problem set
+    sys.path.append('./src/NonnegPCA')
     import coordinator
 
     # Call a problem coordinator
