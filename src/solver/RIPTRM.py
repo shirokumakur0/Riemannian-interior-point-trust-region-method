@@ -1044,7 +1044,7 @@ def main(cfg):  # Experiment of nonnegative PCA. Mainly for debugging
     # Run the experiment
     riptrmsolver = RIPTRM(option)
     output = riptrmsolver.run(problem)
-    # print(output)
+    print(output)
 
 if __name__=='__main__':
     main()

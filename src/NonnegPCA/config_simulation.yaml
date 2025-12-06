@@ -18,10 +18,10 @@ solver_option:
       wandb_project: ${problem_name}-${problem_instance}-${problem_initialpoint}  # project name in wandb
       verbosity: 0  # verbosity of solver
     RIPTRM:
-      # TRS_solver: 'tCG'
-      # second_order_stationarity: False
-      TRS_solver: 'Exact_RepMat'
-      second_order_stationarity: True
+      TRS_solver: 'tCG'
+      second_order_stationarity: False
+      # TRS_solver: 'Exact_RepMat'
+      # second_order_stationarity: True
     RSQO:
       quadoptim_eigvalcorr: 1e-2 # 1e-4
     RIPM:
