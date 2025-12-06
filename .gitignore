@@ -7,8 +7,9 @@
 /multirun
 /outputs
 /wandb
-/intermediate/
-/result/
-
+/intermediate/*
+!/intermediate/.gitkeep
+/result/*
+!/result/.gitkeep
 # Python cache
 **/__pycache__/
