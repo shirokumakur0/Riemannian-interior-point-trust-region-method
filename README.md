@@ -1,6 +1,6 @@
 # Riemannian interior point trust region method
 
-Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior point trust region method for second-order stationary points of Riemannian inequality-constrained optimization problems, arXiv, 2025".[[link]](https://arxiv.org/abs/2501.15419)
+Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior point trust region method for second-order stationary points of Riemannian inequality-constrained optimization problems, arXiv, 2025" [[link]](https://arxiv.org/abs/2501.15419)
 
 Our implementation includes
 
