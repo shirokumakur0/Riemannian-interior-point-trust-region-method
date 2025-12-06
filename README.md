@@ -104,4 +104,4 @@ Run the following command to solve problem instances '1', '2', and '3' with init
 python src/NonnegPCA/simulator.py -m
 ```
 
-By leveraging the multi-run feature, we can efficiently manage and process multiple problem instances and obtain results more effectively.
+By leveraging the multi-run feature, we can efficiently manage and process multiple problem instances.
