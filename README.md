@@ -4,7 +4,7 @@ Code for the paper "M. Obara, T. Okuno, and A. Takeda. A primal-dual interior po
 
 Our implementation includes
 
-- Riemannian interior point trust region method (RIPTRM) [[link]](https://arxiv.org/abs/2501.15419)
+- Riemannian interior point trust region method (RIPTRM)
 - Riemannian interior point method (RIPM) <!-- in "Z. Lai and A. Yoshise. Riemannian interior point methods for constrained optimization on manifolds, Journal of Optimization Theory and Applications, 201 (2024), pp.433–469."--> [[link]](https://link.springer.com/article/10.1007/s10957-024-02403-8)
 - Riemannian sequential quadratic optimization (RSQO) <!-- in "M. Obara, T. Okuno, and A. Takeda. Sequential quadratic optimization for nonlinear optimization problems on Riemannian manifolds, SIAM Journal on Optimization, 32 (2022), pp.822–853."--> [[link]](https://epubs.siam.org/doi/abs/10.1137/20M1370173?download=true&journalCode=sjope8)
 - Riemannian augmented Lagrangian method (RALM) <!-- in "C. Liu and N. Boumal. Simple algorithms for optimization on Riemannian manifolds with constraints, Applied Mathematics and Optimization, 82 (2020), pp.949–981."--> [[link]](https://link.springer.com/article/10.1007/s00245-019-09564-3)
