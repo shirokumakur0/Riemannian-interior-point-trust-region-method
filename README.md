@@ -44,7 +44,7 @@ The 'analyzer' reads and analyzes the raw data from the 'intermediate' folder to
 
 For a visual representation of the relationships and workflow among the modules, you can refer to the following:
 
-![simulation_overview](https://github.com/Mathematical-Informatics-5th-Lab/Simulator-Template/assets/38340809/998edf62-0c45-4446-92cf-ac71af04ff4c)
+![Image](https://github.com/user-attachments/assets/073bc24a-9864-4c87-90c9-eb8b05a02319)
 
 The following optimization problems are available:
 
